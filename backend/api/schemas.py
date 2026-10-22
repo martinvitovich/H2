@@ -7,6 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 from core.elu.cortante import ShearInput
+from core.elu.losas import SlabInput
 from core.elu.pilares import ColumnInput
 from core.els.fisuracion import CrackInput
 from core.els.flechas import DeflectionInput
@@ -245,6 +246,37 @@ class ElsReportRequest(BaseModel):
     project_name: str = Field("Proyecto sin título", max_length=200)
     author: str = Field("", max_length=200)
     request: dict[str, Any]
+
+
+class SlabRequest(BaseModel):
+    element_name: str = Field("Losa", max_length=120)
+    mode: Literal["design", "check"] = "design"
+    h: float = Field(..., gt=0, le=2000)
+    cover: float = Field(25, gt=0, le=100)
+    m_Ed_kNm: float = Field(..., ge=-1e4, le=1e4, description="kN·m/m, + tracción inferior")
+    v_Ed_kN: float = Field(0, ge=0, le=1e4, description="kN/m")
+    span: float | None = Field(None, gt=0, le=1e5)
+    bar_diameter: float = Field(12, ge=5, le=40)
+    bar_spacing: float | None = Field(None, gt=0, le=1000)
+    secondary_diameter: float | None = Field(8, ge=5, le=40)
+    secondary_spacing: float | None = Field(None, gt=0, le=1000)
+    compression_bar_diameter: float | None = Field(None, ge=5, le=40)
+    compression_bar_spacing: float | None = Field(None, gt=0, le=1000)
+    low_brittle_risk: bool = False
+    concrete_class: str = "C25/30"
+    steel_grade: str = "B500S"
+    situation: Literal["persistente", "transitoria", "accidental"] = "persistente"
+    dg: float = Field(20, ge=4, le=63)
+    parameter_overrides: dict[str, Any] = Field(default_factory=dict)
+
+    def build(self) -> SlabInput:
+        return SlabInput(h=self.h, cover=self.cover, m_Ed_knm=self.m_Ed_kNm, v_Ed_kn=self.v_Ed_kN, span=self.span,
+                         mode=self.mode, bar_diameter=self.bar_diameter, bar_spacing=self.bar_spacing,
+                         secondary_diameter=self.secondary_diameter, secondary_spacing=self.secondary_spacing,
+                         compression_bar_diameter=self.compression_bar_diameter,
+                         compression_bar_spacing=self.compression_bar_spacing, low_brittle_risk=self.low_brittle_risk,
+                         concrete_class=self.concrete_class, steel_grade=self.steel_grade, situation=self.situation,
+                         dg=self.dg, params=ParameterSet(self.parameter_overrides), element_name=self.element_name)
 
 
 class MaterialRequest(BaseModel):

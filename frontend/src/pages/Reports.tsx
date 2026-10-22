@@ -28,9 +28,11 @@ export default function Reports() {
             ? await api.shearReport({ project_name, author, request: el.input as ShearRequest })
             : el.type === "pilar"
               ? await api.columnReport({ project_name, author, request: el.input as ColumnRequest })
+              : el.type === "losa"
+                ? await api.slabReport({ project_name, author, request: el.input })
               : await api.elsReport(el.type === "els_fisuracion" ? "fisuracion" : "deformaciones", { project_name, author, request: el.input });
       const prefix =
-        el.type === "viga_flexion" ? "informe_" : el.type === "viga_cortante" ? "informe_cortante_" : el.type === "pilar" ? "informe_pilar_" : `informe_${el.type}_`;
+        el.type === "viga_flexion" ? "informe_" : el.type === "viga_cortante" ? "informe_cortante_" : el.type === "pilar" ? "informe_pilar_" : el.type === "losa" ? "informe_losa_" : `informe_${el.type}_`;
       downloadBlob(blob, `${prefix}${el.input.element_name.replace(/[^A-Za-z0-9_-]+/g, "_")}.pdf`);
     } catch (e) {
       setError((e as Error).message);
@@ -143,6 +145,8 @@ export default function Reports() {
                           ? `cortante · V_Ed = ${el.input.V_Ed_kN} kN`
                           : el.type === "pilar"
                             ? `pilar · N_Ed = ${el.input.N_Ed_kN} kN`
+                            : el.type === "losa"
+                              ? `losa · m_Ed = ${el.input.m_Ed_kNm} kN·m/m`
                             : `${el.type === "els_fisuracion" ? "ELS fisuración" : "ELS deformaciones"} · M_qp = ${el.input.M_qp_kNm} kN·m`}
                     </span>
                   </span>

@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { ErrorBox, PageHeader } from "../components/ui";
-import { DEFAULT_BEAM, DEFAULT_COLUMN, DEFAULT_ELS, DEFAULT_SHEAR, useAppState } from "../state/AppState";
+import { DEFAULT_BEAM, DEFAULT_COLUMN, DEFAULT_ELS, DEFAULT_SHEAR, DEFAULT_SLAB, useAppState } from "../state/AppState";
 import type { Project, ProjectSummary } from "../types";
 
 export default function Projects() {
-  const { activeProject, setActiveProject, setBeam, setShear, setColumn, setEls, setOverrides } = useAppState();
+  const { activeProject, setActiveProject, setBeam, setShear, setColumn, setEls, setSlab, setOverrides } = useAppState();
   const [list, setList] = useState<ProjectSummary[]>([]);
   const [current, setCurrent] = useState<Project | null>(null);
   const [name, setName] = useState("");
@@ -201,6 +201,8 @@ export default function Projects() {
                               ? "cortante ELU"
                               : el.type === "pilar"
                                 ? "pilar"
+                                : el.type === "losa"
+                                  ? "losa"
                                 : el.type === "els_fisuracion"
                                   ? "ELS fisuración"
                                   : "ELS deformaciones"}
@@ -214,6 +216,8 @@ export default function Projects() {
                             ? `V_Ed = ${el.input.V_Ed_kN} kN · ${el.input.concrete_class} · cercos ${el.input.stirrup_grade}`
                             : el.type === "pilar"
                               ? `N_Ed = ${el.input.N_Ed_kN} kN · M02 = ${el.input.M02_kNm} kN·m · ${el.input.b}×${el.input.h} mm`
+                              : el.type === "losa"
+                                ? `m_Ed = ${el.input.m_Ed_kNm} kN·m/m · h = ${el.input.h} mm`
                               : `M_qp = ${el.input.M_qp_kNm} kN·m · ${el.input.concrete_class}`}
                         {el.result?.summary ? ` · ${el.result.summary}` : ""}
                         {el.result?.ok === true && " · cumple"}
@@ -230,6 +234,9 @@ export default function Projects() {
                           } else if (el.type === "viga_cortante") {
                             setShear({ ...DEFAULT_SHEAR, ...el.input, shape: { ...DEFAULT_SHEAR.shape, ...el.input.shape } });
                             nav("/vigas?calc=cortante");
+                          } else if (el.type === "losa") {
+                            setSlab({ ...DEFAULT_SLAB, ...el.input });
+                            nav("/losas");
                           } else if (el.type === "pilar") {
                             setColumn({ ...DEFAULT_COLUMN, ...el.input });
                             nav("/pilares");

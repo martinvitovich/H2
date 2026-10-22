@@ -1,0 +1,8 @@
+{
+  "element_name": "L-ejemplo-1",
+  "mode": "design",
+  "h": 200, "cover": 25, "span": 5000,
+  "m_Ed_kNm": 30, "v_Ed_kN": 50,
+  "bar_diameter": 12, "secondary_diameter": 8,
+  "concrete_class": "C25/30", "steel_grade": "B500S"
+}

@@ -1,23 +1,6 @@
 import { Link } from "react-router-dom";
-import { NotAvailable, PageHeader, StatusBadge } from "../components/ui";
+import { PageHeader, StatusBadge } from "../components/ui";
 import type { ModuleInfo } from "../types";
-
-export function Slabs() {
-  return (
-    <>
-      <PageHeader title="Losas" subtitle="Cálculo de losas de hormigón armado." />
-      <NotAvailable
-        title="Losas"
-        planned={[
-          "Flexión por unidad de ancho en losas unidireccionales (reutilizando el motor de flexión).",
-          "Disposiciones constructivas de losas (9.3).",
-          "Punzonamiento (6.4).",
-          "Flechas mediante el módulo de ELS — deformaciones.",
-        ]}
-      />
-    </>
-  );
-}
 
 export function ELU({ modules }: { modules: ModuleInfo[] }) {
   const st = (id: string) => modules.find((m) => m.id === id)?.status ?? "no_disponible";
@@ -25,6 +8,7 @@ export function ELU({ modules }: { modules: ModuleInfo[] }) {
     { id: "vigas_flexion", name: "Flexión simple (vigas)", ref: "6.1", link: "/vigas" },
     { id: "vigas_cortante", name: "Cortante y cercos (vigas)", ref: "6.2, 9.2.2", link: "/vigas?calc=cortante" },
     { id: "pilares", name: "Flexocompresión y segundo orden (pilares)", ref: "6.1, 5.2, 5.8, 9.5", link: "/pilares" },
+    { id: "losas", name: "Losas macizas unidireccionales (flexión y cortante)", ref: "9.3, 6.1, 6.2.2", link: "/losas" },
   ];
   return (
     <>

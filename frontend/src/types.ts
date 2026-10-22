@@ -312,6 +312,28 @@ export interface ColumnResult {
   request: ColumnRequest;
 }
 
+export interface SlabRequest {
+  element_name: string;
+  mode: "design" | "check";
+  h: number;
+  cover: number;
+  m_Ed_kNm: number;
+  v_Ed_kN: number;
+  span: number | null;
+  bar_diameter: number;
+  bar_spacing: number | null;
+  secondary_diameter: number | null;
+  secondary_spacing: number | null;
+  compression_bar_diameter: number | null;
+  compression_bar_spacing: number | null;
+  low_brittle_risk: boolean;
+  concrete_class: string;
+  steel_grade: string;
+  situation: "persistente" | "transitoria" | "accidental";
+  dg: number;
+  parameter_overrides: Record<string, unknown>;
+}
+
 export interface ElsState {
   element_name: string;
   shape: ShapeIn;
@@ -356,6 +378,7 @@ export type ProjectElement =
   | { id?: string; type: "viga_flexion"; name: string; input: FlexureRequest; result?: { ok: boolean | null; summary?: string } | null }
   | { id?: string; type: "viga_cortante"; name: string; input: ShearRequest; result?: { ok: boolean | null; summary?: string } | null }
   | { id?: string; type: "pilar"; name: string; input: ColumnRequest; result?: { ok: boolean | null; summary?: string } | null }
+  | { id?: string; type: "losa"; name: string; input: SlabRequest; result?: { ok: boolean | null; summary?: string } | null }
   | { id?: string; type: "els_fisuracion" | "els_deformaciones"; name: string; input: Record<string, any>; result?: { ok: boolean | null; summary?: string } | null };
 
 export interface Project {

@@ -11,6 +11,7 @@ const LINKS: Record<string, string> = {
   vigas_flexion: "/vigas",
   vigas_cortante: "/vigas?calc=cortante",
   pilares: "/pilares",
+  losas: "/losas",
   els_fisuracion: "/els",
   els_deformaciones: "/els?calc=deformaciones",
   proyectos: "/proyectos",

@@ -19,7 +19,8 @@ def test_health_and_info(client):
     assert client.get("/api/health").json()["status"] == "ok"
     info = client.get("/api/info").json()
     assert "Anejo 19" in info["norm"]["name"]
-    assert any(m["status"] == "no_disponible" for m in info["modules"])
+    assert all(m["status"] in ("verificado", "pendiente_validacion", "no_disponible") for m in info["modules"])
+    assert not any(m["status"] == "verificado" for m in info["modules"])  # sin validación bibliográfica aún
 
 
 def test_parameters(client):
@@ -96,7 +97,8 @@ def test_projects_crud(client):
     assert r.status_code == 201 and r.json()["id"] != pid
     assert client.delete(f"/api/proyectos/{pid}").status_code == 204
     assert client.get(f"/api/proyectos/{pid}").status_code == 404
-    assert client.get("/api/proyectos/../../etc").status_code == 404
+    assert client.get("/api/proyectos/..%2F..%2Fetc").status_code == 404
+    assert client.get("/api/proyectos/%2E%2E").status_code == 404
 
 
 def test_project_validation(client):
@@ -172,3 +174,24 @@ def test_els_endpoints_and_reports(client):
     assert client.get("/api/els/catalogo").json()["exposure_wmax"]["XC1"] == 0.4
     assert client.post("/api/els/fisuracion", json={**crack, "exposure": "XX"}).status_code == 422
     assert client.post("/api/els/deformaciones", json={**defl, "RH": 30}).status_code == 422
+
+
+def test_slab_endpoint_and_report(client):
+    body = {"h": 200, "m_Ed_kNm": 30, "v_Ed_kN": 50, "span": 5000}
+    r = client.post("/api/losas", json=body)
+    assert r.status_code == 200 and r.json()["result"]["proposal"]
+    r = client.post("/api/informes/losas", json={"request": body})
+    assert r.status_code == 200 and r.content[:5] == b"%PDF-"
+    assert client.post("/api/losas", json={**body, "m_Ed_kNm": 0}).status_code == 422
+
+
+def test_spa_fallback(tmp_path):
+    from main import SPAStaticFiles
+    from starlette.applications import Starlette
+    (tmp_path / "index.html").write_text("<title>HA</title>", encoding="utf-8")
+    app2 = Starlette()
+    app2.mount("/", SPAStaticFiles(directory=tmp_path, html=True))
+    c = TestClient(app2)
+    assert c.get("/pilares").status_code == 200
+    assert "HA" in c.get("/els").text
+    assert c.get("/api/no-existe").status_code == 404

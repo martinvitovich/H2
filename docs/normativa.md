@@ -117,6 +117,19 @@ equivalen a «pág. BOE − 98284».
 | Retracción ε_cs | 3.1.4(6), (3.8)-(3.13), tablas A19.3.2-A19.3.3; (B.11)-(B.12) | `fluencia.py` | — | Verificado; (B.11) reproduce los 30 valores de la tabla A19.3.2 (±0,005 ‰) |
 | Esfuerzo axil, pretensado, armado en dos direcciones (7.15), armadura de piel | 7.3 | **No implementado** | — | Limitación declarada |
 
+## Matriz de trazabilidad (losas macizas unidireccionales, v0.6.0)
+
+| Magnitud / regla | Apartado (BOE pág.) | Implementación | Valor oficial | Estado |
+|---|---|---|---|---|
+| Ámbito: b y l_eff ≥ 5h | 9.3(1) (98430) | check | — | Verificado |
+| Cuantías mínima y máxima | 9.3.1.1(1) → 9.2.1.1(1), (3) (98424, 98430) | `losas.py` | (9.1); 0,04·A_c; alternativa 1,2·A_s,nec si el riesgo de rotura frágil es pequeño | Verificado |
+| Armadura transversal secundaria | 9.3.1.1(2) (98430) | check | ≥ 20 % de la principal | Verificado |
+| Separación máxima | 9.3.1.1(3) (98430) | check | s < 300 mm y s < 3h (desigualdad estricta) | Verificado |
+| Armadura en apoyos | 9.3.1.2(1)-(2) (98430-98431) | información | ½ de la armadura de vano al apoyo; 25 % / 15 % del momento de vano por empotramiento parcial no considerado | Verificado (informativo) |
+| Cortante sin armadura; armadura mínima omitible en losas | 6.2.1(4), 6.2.2 (98359-98360) | check | V_Rd,c | Verificado |
+| Fisuración sin cálculo en losas h ≤ 200 mm | 7.3.3(1) (98396) | información | — | Verificado |
+| Armadura de cortante en losas, bordes libres, esquinas, losas planas, punzonamiento | 9.3.2, 9.3.1.3-9.3.1.4, 9.4, 6.4 | **No implementado** | — | Limitación declarada |
+
 ## Erratas detectadas en el texto oficial
 
 1. **ε_c2 en la tabla A19.3.1 (pág. 98308).** La columna de relaciones analíticas imprime

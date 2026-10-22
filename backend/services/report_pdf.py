@@ -112,6 +112,22 @@ def _section_drawing(geometry: dict, width_pt: float = 70 * mm) -> Drawing:
     return d
 
 
+def build_slab_report(result: dict, request: dict, project_name: str = "", author: str = "") -> bytes:
+    R = result["result"]
+    lines = [f"Banda de 1 m; d = {_num(R['d'], 1)} mm; A_s,nec = {_num(R['As_req'], 0)} mm²/m; "
+             f"A_s,min = {_num(R['As_min'], 0)} mm²/m."]
+    if R.get("phi"):
+        lines.append(f"Armadura principal: φ{_num(float(R['phi']))} c/{_num(float(R['s']), 0)} mm "
+                     f"(A_s = {_num(R['As'], 0)} mm²/m); m_Rd = {_num(R['m_Rd'] / 1e6, 2)} kN·m/m.")
+    if R.get("secondary"):
+        sc = R["secondary"]
+        lines.append(f"Armadura de reparto: φ{_num(float(sc['diameter']))} c/{_num(float(sc['spacing']), 0)} mm "
+                     f"(A_s,t = {_num(sc['As'], 0)} mm²/m ≥ {_num(R['As_secondary_min'], 0)}).")
+    if R.get("v_Rd_c"):
+        lines.append(f"V_Rd,c = {_num(R['v_Rd_c'] / 1e3, 2)} kN/m.")
+    return _build_report(result, request, project_name, author, None, lines)
+
+
 def build_crack_report(result: dict, request: dict, project_name: str = "", author: str = "") -> bytes:
     R = result["result"]
     lines = [f"M_cr = {_num(R['Mcr'] / 1e6, 2)} kN·m; x = {_num(R['x'], 1)} mm; σ_s = {_num(R['sigma_s'], 1)} MPa; "

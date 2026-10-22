@@ -1,19 +1,21 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { api } from "./api/client";
 import { Disclaimer } from "./components/ui";
 import { useAppState } from "./state/AppState";
 import type { ModuleInfo, NormInfo } from "./types";
 import Home from "./pages/Home";
-import Materials from "./pages/Materials";
-import Sections from "./pages/Sections";
-import Beams from "./pages/Beams";
-import Projects from "./pages/Projects";
-import Reports from "./pages/Reports";
-import NormConfig from "./pages/NormConfig";
-import Columns from "./pages/Columns";
-import ELS from "./pages/ELS";
-import { ELU, Slabs } from "./pages/Placeholders";
+
+const Materials = lazy(() => import("./pages/Materials"));
+const Sections = lazy(() => import("./pages/Sections"));
+const Beams = lazy(() => import("./pages/Beams"));
+const Projects = lazy(() => import("./pages/Projects"));
+const Reports = lazy(() => import("./pages/Reports"));
+const NormConfig = lazy(() => import("./pages/NormConfig"));
+const Columns = lazy(() => import("./pages/Columns"));
+const ELS = lazy(() => import("./pages/ELS"));
+const Slabs = lazy(() => import("./pages/Slabs"));
+const ELU = lazy(() => import("./pages/Placeholders").then((m) => ({ default: m.ELU })));
 
 const NAV = [
   { to: "/", label: "Inicio" },
@@ -112,6 +114,7 @@ export default function App() {
           </div>
         )}
         <main className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6">
+          <Suspense fallback={<div className="text-sm text-slate-500">Cargando…</div>}>
           <Routes>
             <Route path="/" element={<Home info={info} />} />
             <Route path="/materiales" element={<Materials />} />
@@ -126,6 +129,7 @@ export default function App() {
             <Route path="/normativa" element={<NormConfig />} />
             <Route path="*" element={<div className="card">Página no encontrada.</div>} />
           </Routes>
+          </Suspense>
         </main>
       </div>
     </div>

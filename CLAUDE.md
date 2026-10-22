@@ -60,7 +60,7 @@ npm run build      # compila frontend
 npm run start      # compila y sirve todo desde FastAPI (:8000)
 ```
 
-## Estado real de los módulos (v0.5.0)
+## Estado real de los módulos (v0.6.0)
 | Módulo | Estado |
 |---|---|
 | Parámetros normativos | Cotejados con el texto oficial (BOE); pendiente solo la ductilidad de aceros (Arts. 34-35 CE) |
@@ -72,7 +72,8 @@ npm run start      # compila y sirve todo desde FastAPI (:8000)
 | Pilares — flexocompresión recta (N–M 6.1, 5.2, 5.8.3, curvatura nominal 5.8.8, 9.5) | Implementado y cotejado · falta contraste bibliográfico |
 | ELS — fisuración y tensiones (7.2, 7.3) | Implementado y cotejado · falta contraste bibliográfico |
 | ELS — deformaciones (7.4, 3.1.4, Apéndice B) | Implementado y cotejado · falta contraste bibliográfico |
-| Losas | No disponible |
+| Losas macizas unidireccionales (9.3, flexión por metro, reparto, cortante sin armadura) | Implementado y cotejado · falta contraste bibliográfico |
+| Losas bidireccionales y planas, punzonamiento (6.4, 9.4) | No disponible |
 
 ## Pendiente
 - Contraste con ejemplos resueltos de bibliografía verificable (para pasar a «verificado»).
@@ -83,9 +84,10 @@ npm run start      # compila y sirve todo desde FastAPI (:8000)
   circulares, cortante en pilares, coeficiente de fluencia (3.1.4).
 - ELS: esfuerzo axil, pretensado, armado en dos direcciones, alas traccionadas (7.3), armadura de piel;
   flechas en vigas continuas con ley de momentos real (integración de curvaturas).
-- Fase 6: consolidación.
+- Losas bidireccionales y planas, punzonamiento (6.4), armadura de cortante en losas (9.3.2).
+- Contraste de todos los módulos con ejemplos resueltos de bibliografía verificable.
 - Dimensionado de secciones en T; armadura de montaje/piel; flexión compuesta.
 - Recubrimientos por durabilidad (4.4.1) y anchura eficaz (5.3.2.1).
 
 ## Decisiones
-Ver `docs/decisiones.md` (D1–D23).
+Ver `docs/decisiones.md` (D1–D25).

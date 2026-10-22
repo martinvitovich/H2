@@ -124,3 +124,12 @@ construcción ni el instante de colocación de tabiques.
 
 ## D23 — Método simplificado en secciones en T
 ρ = A_s,req/(b_w·d) (del lado de la seguridad); corrección × 0,8 si b_f/b_w > 3 (7.4.2(2)).
+
+## D24 — Losas por banda de 1 m con barras equivalentes
+La armadura de cada cara se representa por una barra equivalente de igual área por metro situada a la
+profundidad de su eje; en flexión solo intervienen el área y la profundidad, por lo que el resultado es
+exacto. Las separaciones se comprueban aparte con las reglas de 9.3.1.1(3) y 8.2(2).
+
+## D25 — Despliegue de un solo proceso
+`npm run start` compila el frontend y FastAPI lo sirve con un «fallback» a index.html para las rutas
+de la aplicación (recarga directa de /pilares, /els…); las rutas /api inexistentes devuelven 404.

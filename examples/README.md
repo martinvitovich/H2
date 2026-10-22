@@ -8,4 +8,5 @@ backend/.venv/bin/python examples/run_example.py examples/viga_rect_dimensionado
 backend/.venv/bin/python examples/run_example.py examples/viga_T_comprobacion.json --pdf informe.pdf
 backend/.venv/bin/python examples/run_example.py examples/viga_cortante.json
 backend/.venv/bin/python examples/run_example.py examples/pilar.json
+backend/.venv/bin/python examples/run_example.py examples/losa.json
 ```

@@ -17,6 +17,7 @@ from api.routes import router
 from core.elu.analysis import AnalysisError
 from core.elu.cortante import ShearInputError
 from core.elu.nm import NMError
+from core.elu.losas import SlabInputError
 from core.elu.pilares import ColumnInputError
 from core.els.fisuracion import CrackInputError
 from core.els.flechas import DeflectionInputError
@@ -45,7 +46,8 @@ async def _not_found(_: Request, exc: ProjectNotFound):
 async def _value_error(_: Request, exc: ValueError):
     # Errores de validación del dominio (geometría, materiales, parámetros, proyectos...)
     kinds = (SectionError, MaterialError, ParameterError, FlexureInputError, AnalysisError, ProjectError,
-             ShearInputError, ColumnInputError, NMError, CrackInputError, DeflectionInputError, CreepError)
+             ShearInputError, ColumnInputError, NMError, CrackInputError, DeflectionInputError, CreepError,
+             SlabInputError)
     if isinstance(exc, kinds):
         return JSONResponse(status_code=422, content={"detail": str(exc), "type": type(exc).__name__})
     return JSONResponse(status_code=400, content={"detail": str(exc)})
@@ -53,7 +55,21 @@ async def _value_error(_: Request, exc: ValueError):
 
 app.include_router(router)
 
+class SPAStaticFiles(StaticFiles):
+    """Sirve la compilación del frontend y devuelve index.html para las rutas de la aplicación
+    (p. ej. /pilares) que no corresponden a un fichero, de modo que se puedan recargar."""
+
+    async def get_response(self, path, scope):
+        from starlette.exceptions import HTTPException as StarletteHTTPException
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code == 404 and not scope.get("path", "").startswith("/api"):
+                return await super().get_response("index.html", scope)
+            raise
+
+
 # Si existe una compilación del frontend (npm run build), se sirve desde el backend.
 _dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
 if _dist.is_dir():
-    app.mount("/", StaticFiles(directory=_dist, html=True), name="frontend")
+    app.mount("/", SPAStaticFiles(directory=_dist, html=True), name="frontend")

@@ -11,7 +11,7 @@ advertencias. Genera informes PDF y guarda proyectos.
 > en un proyecto real. Los parámetros se han cotejado con el texto oficial del Anejo 19 (BOE);
 > lo que sigue pendiente se detalla en [docs/normativa.md](docs/normativa.md).
 
-## Funcionalidades (v0.5.0)
+## Funcionalidades (v0.6.0)
 
 - **Vigas — flexión simple ELU**: dimensionado de secciones rectangulares (con armadura
   de compresión si procede), propuesta de barras con alternativas, comprobación de
@@ -28,10 +28,12 @@ advertencias. Genera informes PDF y guarda proyectos.
   (7.3.2) y limitación de tensiones (7.2).
 - **ELS — deformaciones**: relación luz/canto (7.4.2) y cálculo de flechas instantánea, total y diferida
   (7.4.3) con fluencia y retracción del Apéndice B.
+- **Losas macizas unidireccionales**: flexión por metro (dimensionado y comprobación), cuantías y
+  separaciones (9.3.1), armadura de reparto, cortante sin armadura de cortante.
 - Materiales (tabla A19.3.1, diagramas de cálculo), secciones con dibujo a escala.
 - «Normativa y procedimiento» en cada cálculo; configuración normativa editable.
 - Informes PDF; proyectos guardados en JSON versionado (importar/exportar).
-- Pendiente: losas (se muestra como «No disponible»).
+- Pendiente: losas bidireccionales y planas, punzonamiento, flexión esviada.
 
 ## Requisitos
 

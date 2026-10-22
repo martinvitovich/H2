@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
 from core.elu.cortante import shear_beam
+from core.elu.losas import slab_check
 from core.elu.pilares import column_check
 from core.els.fisuracion import WMAX_RC, crack_check
 from core.els.flechas import K_SYSTEM, deflection_check
@@ -18,11 +19,11 @@ from core.parameters import ParameterSet, norm_info
 from core.status import MODULES
 from services.projects import ProjectStore
 from services.report_pdf import (build_column_report, build_crack_report, build_deflection_report,
-                                 build_flexure_report, build_shear_report)
+                                 build_flexure_report, build_shear_report, build_slab_report)
 from version import SOFTWARE_NAME, __version__
 
 from .schemas import (ColumnReportRequest, ColumnRequest, CrackRequest, DeflectionRequest, ElsReportRequest,
-                      FlexureRequest, MaterialRequest, ProjectIn, ReportRequest, SectionRequest, ShearReportRequest,
+                      FlexureRequest, SlabRequest, MaterialRequest, ProjectIn, ReportRequest, SectionRequest, ShearReportRequest,
                       ShearRequest)
 
 router = APIRouter(prefix="/api")
@@ -137,6 +138,22 @@ def column_report(req: ColumnReportRequest) -> Response:
     fn = _safe_filename(f"informe_pilar_{req.request.element_name}") + ".pdf"
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{fn}"'})
+
+
+@router.post("/losas")
+def slab(req: SlabRequest) -> dict:
+    res = slab_check(req.build())
+    res["request"] = req.model_dump()
+    return res
+
+
+@router.post("/informes/losas")
+def slab_report(body: ElsReportRequest) -> Response:
+    req = SlabRequest.model_validate(body.request)
+    res = slab_check(req.build())
+    pdf = build_slab_report(res, req.model_dump(), body.project_name, body.author)
+    fn = _safe_filename(f"informe_losa_{req.element_name}") + ".pdf"
+    return Response(pdf, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{fn}"'})
 
 
 @router.get("/els/catalogo")

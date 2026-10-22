@@ -17,11 +17,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from api.schemas import ColumnRequest, FlexureRequest, ShearRequest  # noqa: E402
+from api.schemas import ColumnRequest, FlexureRequest, ShearRequest, SlabRequest  # noqa: E402
+from core.elu.losas import slab_check  # noqa: E402
 from core.elu.pilares import column_check  # noqa: E402
 from core.elu.cortante import shear_beam  # noqa: E402
 from core.elu.flexion import check_flexure, design_flexure  # noqa: E402
-from services.report_pdf import build_column_report, build_flexure_report, build_shear_report  # noqa: E402
+from services.report_pdf import (build_column_report, build_flexure_report, build_shear_report,  # noqa: E402
+                                 build_slab_report)
 
 
 def main() -> None:
@@ -31,8 +33,12 @@ def main() -> None:
     a = ap.parse_args()
     data = json.loads(Path(a.file).read_text(encoding="utf-8"))
     shear = "V_Ed_kN" in data
-    column = "N_Ed_kN" in data
-    if column:
+    column = "length" in data and "N_Ed_kN" in data
+    slab = "m_Ed_kNm" in data
+    if slab:
+        req = SlabRequest.model_validate(data)
+        res = slab_check(req.build())
+    elif column:
         req = ColumnRequest.model_validate(data)
         res = column_check(req.build())
     elif shear:
@@ -50,7 +56,7 @@ def main() -> None:
     print("\nVerificaciones:")
     for c in tr["checks"]:
         print(f"  [{'OK' if c['ok'] else 'NO'}] {c['name']}: {c['demand']} | {c['capacity']}")
-    if not shear and not column and res.get("proposal"):
+    if not shear and not column and not slab and res.get("proposal"):
         p = res["proposal"]
         print(f"\nArmadura propuesta: {p['text_tension']} / {p['text_compression'] or '-'}")
     if shear and res["result"].get("proposal"):
@@ -59,7 +65,8 @@ def main() -> None:
     for w in tr["warnings"]:
         print(f"AVISO: {w}")
     if a.pdf:
-        build = build_column_report if column else build_shear_report if shear else build_flexure_report
+        build = (build_slab_report if slab else build_column_report if column else build_shear_report if shear
+                 else build_flexure_report)
         Path(a.pdf).write_bytes(build(res, req.model_dump(), "Ejemplo", ""))
         print(f"\nInforme: {a.pdf}")
 
