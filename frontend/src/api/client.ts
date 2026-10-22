@@ -1,4 +1,14 @@
-import type { FlexureRequest, FlexureResult, ModuleInfo, NormInfo, Parameter, Project, ProjectSummary } from "../types";
+import type {
+  FlexureRequest,
+  FlexureResult,
+  ModuleInfo,
+  NormInfo,
+  Parameter,
+  Project,
+  ProjectSummary,
+  ShearRequest,
+  ShearResult,
+} from "../types";
 
 export class ApiError extends Error {
   status: number;
@@ -47,6 +57,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 const post = <T>(path: string, body: unknown) => request<T>(path, { method: "POST", body: JSON.stringify(body) });
 
+async function pdf(path: string, body: unknown): Promise<Blob> {
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(0, "No se pudo conectar con el servidor de cálculo.");
+  }
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, detailToText(b.detail ?? `Error ${res.status}`));
+  }
+  return res.blob();
+}
+
 export const api = {
   info: () => request<{ software: string; version: string; norm: NormInfo; modules: ModuleInfo[] }>("/info"),
   parameters: () => request<{ norm: NormInfo; parameters: Parameter[] }>("/norma/parametros"),
@@ -56,23 +84,11 @@ export const api = {
   materials: (body: unknown) => post<any>("/materiales", body),
   sectionProperties: (body: unknown) => post<any>("/secciones/propiedades", body),
   flexure: (body: FlexureRequest) => post<FlexureResult>("/vigas/flexion", body),
-  flexureReport: async (body: { project_name: string; author: string; request: FlexureRequest }) => {
-    let res: Response;
-    try {
-      res = await fetch("/api/informes/vigas/flexion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    } catch {
-      throw new ApiError(0, "No se pudo conectar con el servidor de cálculo.");
-    }
-    if (!res.ok) {
-      const b = await res.json().catch(() => ({}));
-      throw new ApiError(res.status, detailToText(b.detail ?? `Error ${res.status}`));
-    }
-    return res.blob();
-  },
+  flexureReport: (body: { project_name: string; author: string; request: FlexureRequest }) =>
+    pdf("/informes/vigas/flexion", body),
+  shear: (body: ShearRequest) => post<ShearResult>("/vigas/cortante", body),
+  shearReport: (body: { project_name: string; author: string; request: ShearRequest }) =>
+    pdf("/informes/vigas/cortante", body),
   projects: () => request<ProjectSummary[]>("/proyectos"),
   project: (id: string) => request<Project>(`/proyectos/${id}`),
   createProject: (body: Partial<Project>) => post<Project>("/proyectos", body),

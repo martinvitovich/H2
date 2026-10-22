@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { ErrorBox, PageHeader } from "../components/ui";
-import { DEFAULT_BEAM, useAppState } from "../state/AppState";
+import { DEFAULT_BEAM, DEFAULT_SHEAR, useAppState } from "../state/AppState";
 import type { Project, ProjectSummary } from "../types";
 
 export default function Projects() {
-  const { activeProject, setActiveProject, setBeam, setOverrides } = useAppState();
+  const { activeProject, setActiveProject, setBeam, setShear, setOverrides } = useAppState();
   const [list, setList] = useState<ProjectSummary[]>([]);
   const [current, setCurrent] = useState<Project | null>(null);
   const [name, setName] = useState("");
@@ -192,10 +192,15 @@ export default function Projects() {
                   <li key={el.id ?? i} className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="text-sm font-medium">
-                        {el.name} <span className="text-xs font-normal text-slate-500">· flexión ELU · {el.input.mode === "design" ? "dimensionado" : "comprobación"}</span>
+                        {el.name}{" "}
+                        <span className="text-xs font-normal text-slate-500">
+                          · {el.type === "viga_flexion" ? "flexión ELU" : "cortante ELU"} · {el.input.mode === "design" ? "dimensionado" : "comprobación"}
+                        </span>
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        M_Ed = {el.input.M_Ed_kNm} kN·m · {el.input.concrete_class} · {el.input.steel_grade}
+                        {el.type === "viga_flexion"
+                          ? `M_Ed = ${el.input.M_Ed_kNm} kN·m · ${el.input.concrete_class} · ${el.input.steel_grade}`
+                          : `V_Ed = ${el.input.V_Ed_kN} kN · ${el.input.concrete_class} · cercos ${el.input.stirrup_grade}`}
                         {el.result?.summary ? ` · ${el.result.summary}` : ""}
                         {el.result?.ok === true && " · cumple"}
                         {el.result?.ok === false && " · NO cumple"}
@@ -205,8 +210,13 @@ export default function Projects() {
                       <button
                         className="text-brand hover:underline"
                         onClick={() => {
-                          setBeam({ ...DEFAULT_BEAM, ...el.input, shape: { ...DEFAULT_BEAM.shape, ...el.input.shape } });
-                          nav("/vigas");
+                          if (el.type === "viga_flexion") {
+                            setBeam({ ...DEFAULT_BEAM, ...el.input, shape: { ...DEFAULT_BEAM.shape, ...el.input.shape } });
+                            nav("/vigas");
+                          } else {
+                            setShear({ ...DEFAULT_SHEAR, ...el.input, shape: { ...DEFAULT_SHEAR.shape, ...el.input.shape } });
+                            nav("/vigas?calc=cortante");
+                          }
                         }}
                       >
                         Abrir en Vigas

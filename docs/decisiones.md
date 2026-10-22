@@ -80,3 +80,15 @@ estribos, la verificación queda «no evaluable» y el resultado global no se de
 ## D14 — Barras de capas superpuestas (8.2(3))
 Las capas interiores se colocan en las columnas de la primera capa de la misma cara. Si una capa
 interior tiene más barras que la primera, se informa del incumplimiento.
+
+## D15 — Elección del ángulo de las bielas (cortante)
+No se fija θ arbitrariamente. En el dimensionado se adopta el mayor cot θ del intervalo (6.7)
+con V_Ed ≤ V_Rd,max (raíz de V_Ed·(1 + c²) = K·(c + cot α)), lo que minimiza la armadura de
+cortante. En la comprobación se toma el θ que maximiza V_Rd = min(V_Rd,s; V_Rd,max) dentro de
+(6.7): el límite superior, la intersección V_Rd,s = V_Rd,max (cot θ = √(K/A − 1)) o el máximo de
+V_Rd,max (cot θ* = −cot α + √(cot²α + 1)). El usuario puede fijar cot θ.
+
+## D16 — Propuesta de cercos
+Separación = min(A_sw/(A_sw/s)_nec; s_l,max), redondeada hacia abajo a múltiplos de 25 mm
+(criterio no normativo, configurable), descartando las que no respetan la separación libre de
+8.2(2). Se ofrecen alternativas con φ6–φ12 y 2 o 4 ramas.

@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { api, downloadBlob } from "../api/client";
 import { ErrorBox, PageHeader } from "../components/ui";
 import { useAppState } from "../state/AppState";
-import type { FlexureRequest, Project } from "../types";
+import type { FlexureRequest, Project, ProjectElement, ShearRequest } from "../types";
 
 export default function Reports() {
-  const { beam, overrides, activeProject } = useAppState();
+  const { beam, shear, overrides, activeProject } = useAppState();
   const [project, setProject] = useState<Project | null>(null);
   const [author, setAuthor] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,12 +16,17 @@ export default function Reports() {
     if (activeProject) api.project(activeProject.id).then(setProject).catch(() => setProject(null));
   }, [activeProject]);
 
-  async function generate(req: FlexureRequest, key: string) {
+  async function generate(el: Pick<ProjectElement, "type" | "input">, key: string) {
     setBusy(key);
     setError(null);
     try {
-      const blob = await api.flexureReport({ project_name: project?.name ?? activeProject?.name ?? "Sin proyecto", author, request: req });
-      downloadBlob(blob, `informe_${req.element_name.replace(/[^A-Za-z0-9_-]+/g, "_")}.pdf`);
+      const project_name = project?.name ?? activeProject?.name ?? "Sin proyecto";
+      const blob =
+        el.type === "viga_flexion"
+          ? await api.flexureReport({ project_name, author, request: el.input as FlexureRequest })
+          : await api.shearReport({ project_name, author, request: el.input as ShearRequest });
+      const prefix = el.type === "viga_flexion" ? "informe_" : "informe_cortante_";
+      downloadBlob(blob, `${prefix}${el.input.element_name.replace(/[^A-Za-z0-9_-]+/g, "_")}.pdf`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -41,7 +46,7 @@ export default function Reports() {
       <ErrorBox error={error} />
       <div className="mt-2 grid gap-4 lg:grid-cols-2">
         <section className="card space-y-3">
-          <h2 className="h2">Viga actual (módulo Vigas)</h2>
+          <h2 className="h2">Elementos actuales (módulo Vigas)</h2>
           <p className="text-sm text-slate-600">
             {beam.element_name} · {beam.mode === "design" ? "dimensionado" : "comprobación"} · M_Ed = {beam.M_Ed_kNm} kN·m · {beam.concrete_class} · {beam.steel_grade}
           </p>
@@ -49,8 +54,31 @@ export default function Reports() {
             <span className="label">Autor (opcional)</span>
             <input className="input" value={author} onChange={(e) => setAuthor(e.target.value)} />
           </label>
-          <button className="btn-primary" disabled={busy !== null} onClick={() => generate(currentReq, "current")}>
-            {busy === "current" ? "Generando…" : "Generar informe PDF"}
+          <button className="btn-primary" disabled={busy !== null} onClick={() => generate({ type: "viga_flexion", input: currentReq }, "current")}>
+            {busy === "current" ? "Generando…" : "Informe de flexión (PDF)"}
+          </button>
+          <p className="text-sm text-slate-600">
+            Cortante: {shear.element_name} · {shear.mode === "design" ? "dimensionado" : "comprobación"} · V_Ed = {shear.V_Ed_kN} kN
+          </p>
+          <button
+            className="btn-secondary"
+            disabled={busy !== null}
+            onClick={() =>
+              generate(
+                {
+                  type: "viga_cortante",
+                  input: {
+                    ...shear,
+                    shape: shear.shape.kind === "rectangular" ? { kind: "rectangular", b: shear.shape.b, h: shear.shape.h } : { kind: "T", bf: shear.shape.bf, hf: shear.shape.hf, bw: shear.shape.bw, h: shear.shape.h },
+                    stirrup_spacing: shear.mode === "check" ? shear.stirrup_spacing : null,
+                    parameter_overrides: overrides,
+                  },
+                },
+                "current-shear",
+              )
+            }
+          >
+            {busy === "current-shear" ? "Generando…" : "Informe de cortante (PDF)"}
           </button>
           <p className="text-[11px] text-slate-500">
             Para modificar los datos, vaya a{" "}
@@ -76,9 +104,12 @@ export default function Reports() {
               {project.elements.map((el, i) => (
                 <li key={el.id ?? i} className="flex items-center justify-between py-2">
                   <span className="text-sm">
-                    {el.name} <span className="text-xs text-slate-500">· M_Ed = {el.input.M_Ed_kNm} kN·m</span>
+                    {el.name}{" "}
+                    <span className="text-xs text-slate-500">
+                      · {el.type === "viga_flexion" ? `flexión · M_Ed = ${el.input.M_Ed_kNm} kN·m` : `cortante · V_Ed = ${el.input.V_Ed_kN} kN`}
+                    </span>
                   </span>
-                  <button className="btn-secondary text-xs" disabled={busy !== null} onClick={() => generate({ ...el.input, parameter_overrides: project.parameter_overrides }, el.id ?? String(i))}>
+                  <button className="btn-secondary text-xs" disabled={busy !== null} onClick={() => generate({ type: el.type, input: { ...el.input, parameter_overrides: project.parameter_overrides } } as ProjectElement, el.id ?? String(i))}>
                     {busy === (el.id ?? String(i)) ? "Generando…" : "PDF"}
                   </button>
                 </li>

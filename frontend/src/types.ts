@@ -187,13 +187,71 @@ export interface FlexureResult {
   request: FlexureRequest;
 }
 
-export interface ProjectElement {
-  id?: string;
-  type: "viga_flexion";
-  name: string;
-  input: FlexureRequest;
-  result?: { ok: boolean | null; summary?: string } | null;
+export interface ShearRequest {
+  element_name: string;
+  mode: "design" | "check";
+  shape: ShapeIn;
+  cover: number;
+  stirrup_diameter: number;
+  stirrup_legs: number;
+  stirrup_spacing: number | null;
+  alpha_deg: number;
+  dg: number;
+  layers: LayerIn[];
+  tension_face: Face;
+  V_Ed_kN: number;
+  N_Ed_kN: number;
+  concrete_class: string;
+  stirrup_grade: string;
+  situation: "persistente" | "transitoria" | "accidental";
+  cot_theta: number | null;
+  nu1_simplified: boolean;
+  parameter_overrides: Record<string, unknown>;
 }
+
+export interface StirrupOption {
+  diameter: number;
+  legs: number;
+  spacing: number;
+  Asw_s_mm2_m?: number;
+  s_t?: number;
+}
+
+export interface ShearResult {
+  mode: "design" | "check";
+  ok: boolean | null;
+  trace: Trace;
+  materials: { concrete: Record<string, number | string>; stirrups: Record<string, number | string | null> };
+  result: {
+    VRdc: { k: number; rho_l: number; sigma_cp: number; VRdc: number; VRdc_a: number; VRdc_b: number; vmin: number };
+    z: number;
+    nu1: number;
+    fywd: number;
+    rho_w_min: number;
+    s_l_max: number;
+    s_t_max: number;
+    s_t_legs: number;
+    Asw: number;
+    needs_shear_reinforcement: boolean;
+    cot_theta?: number;
+    theta_deg?: number;
+    VRd_max?: number;
+    VRd_s?: number;
+    Asw_s_req?: number;
+    Asw_s_design?: number;
+    Asw_s_provided?: number;
+    rho_w?: number;
+    Delta_Ftd?: number;
+    proposal?: StirrupOption | null;
+    alternatives?: StirrupOption[];
+    geometry: Geometry;
+  };
+  request: ShearRequest;
+}
+
+export type ProjectElement =
+  | { id?: string; type: "viga_flexion"; name: string; input: FlexureRequest; result?: { ok: boolean | null; summary?: string } | null }
+  | { id?: string; type: "viga_cortante"; name: string; input: ShearRequest; result?: { ok: boolean | null; summary?: string } | null };
 
 export interface Project {
   id: string;

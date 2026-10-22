@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import type { FlexureRequest } from "../types";
+import type { FlexureRequest, ShearRequest } from "../types";
 
 /** Estado global de la interfaz. Solo datos de conveniencia del usuario (borradores y
  * parámetros editados); los cálculos se ejecutan siempre en el backend. */
@@ -26,11 +26,38 @@ export const DEFAULT_BEAM: FlexureRequest = {
   stirrup_spacing: 150,
 };
 
+export const DEFAULT_SHEAR: ShearRequest = {
+  element_name: "V-1",
+  mode: "design",
+  shape: { kind: "rectangular", b: 300, h: 500, bf: 800, hf: 120, bw: 300 },
+  cover: 30,
+  stirrup_diameter: 8,
+  stirrup_legs: 2,
+  stirrup_spacing: 200,
+  alpha_deg: 90,
+  dg: 20,
+  layers: [
+    { face: "inferior", n: 3, diameter: 20 },
+    { face: "superior", n: 2, diameter: 12 },
+  ],
+  tension_face: "inferior",
+  V_Ed_kN: 150,
+  N_Ed_kN: 0,
+  concrete_class: "C25/30",
+  stirrup_grade: "B500S",
+  situation: "persistente",
+  cot_theta: null,
+  nu1_simplified: false,
+  parameter_overrides: {},
+};
+
 interface AppState {
   overrides: Record<string, unknown>;
   setOverrides: (o: Record<string, unknown>) => void;
   beam: FlexureRequest;
   setBeam: (b: FlexureRequest) => void;
+  shear: ShearRequest;
+  setShear: (s: ShearRequest) => void;
   activeProject: { id: string; name: string } | null;
   setActiveProject: (p: { id: string; name: string } | null) => void;
 }
@@ -57,18 +84,21 @@ function save(key: string, value: unknown) {
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [overrides, setOv] = useState<Record<string, unknown>>(() => load("ha.overrides", {}));
   const [beam, setB] = useState<FlexureRequest>(() => ({ ...DEFAULT_BEAM, ...load("ha.beam", {}) }));
+  const [shear, setSh] = useState<ShearRequest>(() => ({ ...DEFAULT_SHEAR, ...load("ha.shear", {}) }));
   const [activeProject, setAP] = useState<{ id: string; name: string } | null>(() => load("ha.project", null));
 
   useEffect(() => save("ha.overrides", overrides), [overrides]);
   useEffect(() => save("ha.beam", beam), [beam]);
   useEffect(() => save("ha.project", activeProject), [activeProject]);
+  useEffect(() => save("ha.shear", shear), [shear]);
 
   const setOverrides = useCallback((o: Record<string, unknown>) => setOv(o), []);
   const setBeam = useCallback((b: FlexureRequest) => setB(b), []);
+  const setShear = useCallback((x: ShearRequest) => setSh(x), []);
   const setActiveProject = useCallback((p: { id: string; name: string } | null) => setAP(p), []);
 
   return (
-    <Ctx.Provider value={{ overrides, setOverrides, beam, setBeam, activeProject, setActiveProject }}>
+    <Ctx.Provider value={{ overrides, setOverrides, beam, setBeam, shear, setShear, activeProject, setActiveProject }}>
       {children}
     </Ctx.Provider>
   );

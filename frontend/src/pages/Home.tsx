@@ -9,6 +9,7 @@ const LINKS: Record<string, string> = {
   materiales: "/materiales",
   secciones: "/secciones",
   vigas_flexion: "/vigas",
+  vigas_cortante: "/vigas?calc=cortante",
   proyectos: "/proyectos",
   informes: "/informes",
 };

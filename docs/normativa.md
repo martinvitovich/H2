@@ -48,6 +48,32 @@ equivalen a «pág. BOE − 98284».
 | Recubrimientos | 8.1(2) → apartado 43.4.1 del CE | No implementado | lo introduce el usuario | Remite al articulado |
 | Anchura eficaz del ala | 5.3.2.1 | No implementado | lo introduce el usuario | — |
 
+## Matriz de trazabilidad (cortante ELU de vigas, v0.3.0)
+
+| Magnitud / regla | Apartado (BOE pág.) | Implementación | Valor oficial | Estado |
+|---|---|---|---|---|
+| Procedimiento general, V_Rd = V_Rd,s + V_ccd + V_td | 6.2.1(2), (6.1) (98359) | `cortante.py` | V_ccd = V_td = 0 (canto constante) | Verificado |
+| Zonas sin armadura de cálculo; armadura mínima obligatoria | 6.2.1(3)-(5) (98359) | `shear_beam` | V_Ed ≤ V_Rd,c ⇒ mínima | Verificado (sin aplicar las excepciones de 6.2.1(4)) |
+| V_Ed − V_ccd − V_td ≤ V_Rd,max | 6.2.1(6) (98359) | check «Compresión oblicua» | — | Verificado |
+| V_Rd,c | 6.2.2(1), (6.2.a) (98359-98360) | `vrdc` | C_Rd,c = 0,18/γ_c; k = 1 + √(200/d) ≤ 2; ρ_l ≤ 0,02; k_1 = 0,15; σ_cp < 0,2·f_cd | Verificado |
+| Valor mínimo | (6.2.b), (6.3) (98360) | `vrdc` | v_min = 0,035·k^(3/2)·f_ck^(1/2) | Verificado |
+| Celosía, z | 6.2.3(1) (98362) | `z_shear_factor` | z = 0,9·d (habitual sin axil) | Verificado; aviso si N_Ed ≠ 0 |
+| Inclinación de bielas | 6.2.3(2), **(6.7)** (98362) | `cot_theta_min/max` | **0,5 ≤ cot θ ≤ 2** (la EN 1992-1-1 usa 1 ≤ cot θ ≤ 2,5) | Verificado |
+| V_Rd,s cercos verticales / inclinados | (6.8) / (6.13) (98362-98363) | `vrd_s` | — | Verificado |
+| V_Rd,max verticales / inclinados | (6.9) / (6.14) (98363) | `vrd_max` | — | Verificado |
+| ν_1 | (6.6) / 6.2.3(3) y (6.10) (98361, 98363) | `nu1_and_fywd` | 0,6(1 − f_ck/250); opción (6.10) con f_ywd = 0,8·f_ywk | Verificado |
+| α_cw | 6.2.3(3) (98363) | `alpha_cw` | 1 para estructuras sin pretensado | Verificado |
+| Área máxima eficaz | notas (6.12)/(6.15) (98363) | aviso | ≤ ½·α_cw·ν_1·f_cd/sen α (cot θ = 1) | Verificado (como aviso) |
+| ΔF_td | 6.2.3(7), (6.18) (98364) | resultado informativo | 0,5·V_Ed·(cot θ − cot α) | Verificado (no se comprueba la armadura longitudinal) |
+| Ángulo de la armadura de cortante | 9.2.2(1) (98427) | validación | 45° ≤ α ≤ 90° | Verificado |
+| Proporción de cercos | 9.2.2(4) (98428) | hipótesis | β_3 = 0,5 | Verificado (solo cercos ⇒ se cumple) |
+| ρ_w y ρ_w,min | 9.2.2(5), (9.4)-(9.5) (98428) | check | ρ_w = A_sw/(s·b_w·sen α); ρ_w,min = 0,08·√f_ck/f_yk | Verificado |
+| s_l,max | 9.2.2(6), (9.6) (98428) | check | 0,75·d·(1 + cot α) | Verificado |
+| s_t,max | 9.2.2(8), (9.8) (98428) | check | 0,75·d ≤ 600 mm | Verificado |
+| Separación libre entre cercos | 8.2(2) (98405) | check y propuesta | max(φ; d_g + 5; 20 mm) | Verificado |
+| Reducción β por cargas próximas a apoyos | 6.2.2(6), 6.2.3(8) | **No implementado** | — | Limitación declarada |
+| Rasante ala-alma, juntas, torsión | 6.2.4, 6.2.5, 6.3 | **No implementado** | — | Limitación declarada |
+
 ## Erratas detectadas en el texto oficial
 
 1. **ε_c2 en la tabla A19.3.1 (pág. 98308).** La columna de relaciones analíticas imprime

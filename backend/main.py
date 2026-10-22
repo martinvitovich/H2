@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.routes import router
 from core.elu.analysis import AnalysisError
+from core.elu.cortante import ShearInputError
 from core.elu.flexion import FlexureInputError
 from core.materials import MaterialError
 from core.parameters import ParameterError
@@ -38,7 +39,8 @@ async def _not_found(_: Request, exc: ProjectNotFound):
 @app.exception_handler(ValueError)
 async def _value_error(_: Request, exc: ValueError):
     # Errores de validación del dominio (geometría, materiales, parámetros, proyectos...)
-    kinds = (SectionError, MaterialError, ParameterError, FlexureInputError, AnalysisError, ProjectError)
+    kinds = (SectionError, MaterialError, ParameterError, FlexureInputError, AnalysisError, ProjectError,
+             ShearInputError)
     if isinstance(exc, kinds):
         return JSONResponse(status_code=422, content={"detail": str(exc), "type": type(exc).__name__})
     return JSONResponse(status_code=400, content={"detail": str(exc)})

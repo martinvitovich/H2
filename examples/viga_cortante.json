@@ -1,0 +1,16 @@
+{
+  "element_name": "V-ejemplo-3",
+  "mode": "design",
+  "shape": {"kind": "rectangular", "b": 300, "h": 500},
+  "cover": 30,
+  "stirrup_diameter": 8,
+  "stirrup_legs": 2,
+  "alpha_deg": 90,
+  "layers": [{"face": "inferior", "n": 3, "diameter": 20}],
+  "tension_face": "inferior",
+  "V_Ed_kN": 250,
+  "N_Ed_kN": 0,
+  "concrete_class": "C25/30",
+  "stirrup_grade": "B500S",
+  "situation": "persistente"
+}

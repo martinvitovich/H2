@@ -113,6 +113,43 @@ def _section_drawing(geometry: dict, width_pt: float = 70 * mm) -> Drawing:
 
 
 def build_flexure_report(result: dict, request: dict, project_name: str = "", author: str = "") -> bytes:
+    geom = None
+    lines: list[str] = []
+    if result.get("mode") == "design" and result.get("proposal"):
+        pr = result["proposal"]
+        geom = pr["geometry"]
+        lines.append(f"Armadura propuesta — tracción: {pr['text_tension']} (A_s = {_num(pr['As_tension'], 0)} mm²); "
+                     f"compresión: {pr['text_compression'] or 'no requerida por el cálculo'}"
+                     f"{'' if not pr['text_compression'] else ' (A_s2 = ' + _num(pr['As_compression'], 0) + ' mm²)'}; "
+                     f"d = {_num(pr['d'], 1)} mm.")
+    elif result.get("geometry"):
+        geom = result["geometry"]
+    return _build_report(result, request, project_name, author, geom, lines)
+
+
+def build_shear_report(result: dict, request: dict, project_name: str = "", author: str = "") -> bytes:
+    R = result["result"]
+    lines = [f"V_Rd,c = {_num(R['VRdc']['VRdc'] / 1e3, 2)} kN; cot θ = {_num(R.get('cot_theta'), 3)} "
+             f"(θ = {_num(R.get('theta_deg'), 1)}°); V_Rd,max = {_num((R.get('VRd_max') or 0) / 1e3, 2)} kN."]
+    if result.get("mode") == "design":
+        pr = R.get("proposal")
+        if pr and pr.get("spacing"):
+            lines.append(f"Cercos propuestos: φ{_num(float(pr['diameter']))} de {pr['legs']} ramas cada "
+                         f"{_num(float(pr['spacing']), 0)} mm (A_sw/s necesaria = {_num(R['Asw_s_design'] * 1000, 1)} mm²/m).")
+        else:
+            lines.append("Sin disposición de cercos válida (véanse advertencias).")
+    else:
+        lines.append(f"Cercos existentes: φ{_num(float(request['stirrup_diameter']))} de {request['stirrup_legs']} "
+                     f"ramas cada {_num(float(request['stirrup_spacing']), 0)} mm.")
+    if R.get("VRd_s") is not None:
+        lines.append(f"V_Rd,s = {_num(R['VRd_s'] / 1e3, 2)} kN.")
+    if R.get("Delta_Ftd") is not None:
+        lines.append(f"Tracción adicional en la armadura longitudinal ΔF_td = {_num(R['Delta_Ftd'] / 1e3, 2)} kN (6.18).")
+    return _build_report(result, request, project_name, author, R.get("geometry"), lines)
+
+
+def _build_report(result: dict, request: dict, project_name: str, author: str, geom: dict | None,
+                  result_lines: list[str]) -> bytes:
     _register_fonts()
     S = _styles()
     tr = result["trace"]
@@ -155,10 +192,16 @@ def build_flexure_report(result: dict, request: dict, project_name: str = "", au
     rows = [["Dato", "Valor"]]
     for k, v in tr["inputs"].items():
         if isinstance(v, dict):
-            v = "; ".join(f"{kk} = {_num(vv) if isinstance(vv, float) else vv}" for kk, vv in v.items())
+            v = "; ".join(f"{kk} = {_num(vv) if isinstance(vv, float) else vv}" for kk, vv in v.items()
+                          if vv is not None)
         elif isinstance(v, list):
-            v = " | ".join("; ".join(f"{kk} = {vv}" for kk, vv in it.items()) if isinstance(it, dict) else str(it)
-                           for it in v)
+            v = " | ".join("; ".join(f"{kk} = {_num(vv) if isinstance(vv, float) else vv}"
+                                     for kk, vv in it.items() if vv is not None)
+                           if isinstance(it, dict) else str(it) for it in v)
+        elif isinstance(v, bool):
+            v = "sí" if v else "no"
+        elif v is None:
+            v = "—"
         elif isinstance(v, float):
             v = _num(v)
         rows.append([k.replace("_", " "), v])
@@ -169,9 +212,9 @@ def build_flexure_report(result: dict, request: dict, project_name: str = "", au
     # Materiales
     E.append(_p("2. Materiales", S["h2"]))
     c = result["materials"]["concrete"]
-    s = result["materials"]["steel"]
+    s = result["materials"].get("steel") or result["materials"]["stirrups"]
     E.append(_table([
-        ["Hormigón", "Valor", "Acero", "Valor"],
+        ["Hormigón", "Valor", "Acero" if "steel" in result["materials"] else "Acero de cercos", "Valor"],
         ["Clase", c["name"], "Designación", s["name"]],
         ["f_ck (MPa)", _num(c["fck"]), "f_yk (MPa)", _num(s["fyk"])],
         ["γ_c", _num(c["gamma_c"]), "γ_s", _num(s["gamma_s"])],
@@ -186,11 +229,6 @@ def build_flexure_report(result: dict, request: dict, project_name: str = "", au
 
     # Geometría y armado
     E.append(_p("3. Geometría y armaduras", S["h2"]))
-    geom = None
-    if result.get("mode") == "design" and result.get("proposal"):
-        geom = result["proposal"]["geometry"]
-    elif result.get("geometry"):
-        geom = result["geometry"]
     if geom:
         info = [["Propiedad", "Valor"],
                 ["A_c (mm²)", _num(geom["Ac"], 0)], ["y_g desde fibra superior (mm)", _num(geom["yg"], 1)],
@@ -201,13 +239,9 @@ def build_flexure_report(result: dict, request: dict, project_name: str = "", au
                   colWidths=[90 * mm, 90 * mm])
         t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
         E.append(t)
-    if result.get("mode") == "design" and result.get("proposal"):
-        pr = result["proposal"]
+    for line in result_lines:
         E.append(Spacer(1, 3))
-        E.append(_p(f"Armadura propuesta — tracción: {pr['text_tension']} (A_s = {_num(pr['As_tension'], 0)} mm²); "
-                    f"compresión: {pr['text_compression'] or 'no requerida por el cálculo'}"
-                    f"{'' if not pr['text_compression'] else ' (A_s2 = ' + _num(pr['As_compression'], 0) + ' mm²)'}; "
-                    f"d = {_num(pr['d'], 1)} mm.", S["base"]))
+        E.append(_p(line, S["base"]))
 
     # Hipótesis
     E.append(_p("4. Hipótesis de cálculo", S["h2"]))

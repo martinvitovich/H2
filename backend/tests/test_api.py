@@ -106,3 +106,32 @@ def test_project_validation(client):
     assert r.status_code == 422
     r = client.post("/api/proyectos/importar", json={"format": "ha-anejo19-project", "format_version": 99})
     assert r.status_code == 422
+
+
+SHEAR = {"shape": RECT, "V_Ed_kN": 150, "layers": [{"face": "inferior", "n": 3, "diameter": 20}]}
+
+
+def test_shear_endpoint_and_report(client):
+    r = client.post("/api/vigas/cortante", json=SHEAR)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True and body["result"]["proposal"]["spacing"] > 0
+    r = client.post("/api/vigas/cortante", json={**SHEAR, "mode": "check", "stirrup_spacing": 200})
+    assert r.status_code == 200
+    r = client.post("/api/informes/vigas/cortante", json={"request": SHEAR})
+    assert r.status_code == 200 and r.content[:5] == b"%PDF-"
+    r = client.post("/api/informes/vigas/cortante", json={"request": {**SHEAR, "mode": "check", "stirrup_spacing": 200}})
+    assert r.status_code == 200 and r.content[:5] == b"%PDF-"
+
+
+def test_shear_invalid(client):
+    assert client.post("/api/vigas/cortante", json={**SHEAR, "mode": "check"}).status_code == 422
+    assert client.post("/api/vigas/cortante", json={**SHEAR, "alpha_deg": 30}).status_code == 422
+    assert client.post("/api/vigas/cortante", json={**SHEAR, "cot_theta": 2.5}).status_code == 422
+    assert client.post("/api/vigas/cortante", json={**SHEAR, "layers": []}).status_code == 422
+
+
+def test_project_with_shear_element(client):
+    el = {"type": "viga_cortante", "name": "V-1 cortante", "input": SHEAR}
+    r = client.post("/api/proyectos", json={"name": "P", "elements": [el]})
+    assert r.status_code == 201

@@ -1,6 +1,6 @@
 {
   "name": "ha-anejo19",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Cálculo de estructuras de hormigón armado según el Anejo 19 del Código Estructural (RD 470/2021)",
   "scripts": {

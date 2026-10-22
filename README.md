@@ -11,17 +11,20 @@ advertencias. Genera informes PDF y guarda proyectos.
 > en un proyecto real. Los parámetros se han cotejado con el texto oficial del Anejo 19 (BOE);
 > lo que sigue pendiente se detalla en [docs/normativa.md](docs/normativa.md).
 
-## Funcionalidades (v0.2.0)
+## Funcionalidades (v0.3.0)
 
 - **Vigas — flexión simple ELU**: dimensionado de secciones rectangulares (con armadura
   de compresión si procede), propuesta de barras con alternativas, comprobación de
   secciones rectangulares y en T con armaduras en varias capas (método general
   parábola-rectángulo), armaduras mínima/máxima (9.2.1.1, expresión (9.1)), sujeción de
   barras comprimidas (9.2.1.2(3)), separaciones (8.2), criterio de ductilidad.
-- Materiales (tabla 3.1, diagramas de cálculo), secciones con dibujo a escala.
+- **Vigas — cortante ELU**: V_Rd,c (6.2.2), dimensionado y comprobación de cercos verticales o
+  inclinados con ángulo de bielas variable (0,5 ≤ cot θ ≤ 2), compresión en bielas, cuantía
+  mínima y separaciones (9.2.2), tracción adicional ΔF_td.
+- Materiales (tabla A19.3.1, diagramas de cálculo), secciones con dibujo a escala.
 - «Normativa y procedimiento» en cada cálculo; configuración normativa editable.
 - Informes PDF; proyectos guardados en JSON versionado (importar/exportar).
-- Pendiente: cortante, losas, pilares, ELS (se muestran como «No disponible»).
+- Pendiente: losas, pilares, ELS (se muestran como «No disponible»).
 
 ## Requisitos
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import BeamShear from "./BeamShear";
 import { api, downloadBlob } from "../api/client";
 import { LayersEditor, DIAMETERS } from "../components/LayersEditor";
 import { SectionDrawing } from "../components/SectionDrawing";
@@ -23,6 +24,41 @@ function cleanRequest(beam: FlexureRequest, overrides: Record<string, unknown>):
 }
 
 export default function Beams() {
+  const [params, setParams] = useSearchParams();
+  const calc = params.get("calc") === "cortante" ? "cortante" : "flexion";
+  const tabs = [
+    { id: "flexion", label: "Flexión simple" },
+    { id: "cortante", label: "Cortante" },
+  ];
+  return (
+    <>
+      <PageHeader
+        title={calc === "flexion" ? "Vigas — flexión simple ELU" : "Vigas — cortante ELU"}
+        subtitle={
+          calc === "flexion"
+            ? "Dimensionado de la armadura longitudinal de secciones rectangulares y comprobación de secciones rectangulares o en T con armadura existente (Anejo 19, 6.1; 3.1.7; 9.2.1.1; 8.2)."
+            : "Resistencia sin armadura de cortante, dimensionado y comprobación de cercos con modelo de celosía de ángulo variable (Anejo 19, 6.2; 9.2.2)."
+        }
+      >
+        <StatusBadge status="pendiente_validacion" />
+      </PageHeader>
+      <div className="mb-4 flex gap-1 border-b border-slate-200">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setParams(t.id === "flexion" ? {} : { calc: t.id })}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${calc === t.id ? "border-brand text-brand" : "border-transparent text-slate-500 hover:text-ink"}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {calc === "flexion" ? <BeamFlexure /> : <BeamShear />}
+    </>
+  );
+}
+
+function BeamFlexure() {
   const { beam, setBeam, overrides, activeProject } = useAppState();
   const [catalog, setCatalog] = useState<{ concrete_classes: string[]; steel_grades: string[] }>({
     concrete_classes: ["C25/30"],
@@ -112,13 +148,6 @@ export default function Beams() {
 
   return (
     <>
-      <PageHeader
-        title="Vigas — flexión simple ELU"
-        subtitle="Dimensionado de la armadura longitudinal de secciones rectangulares y comprobación de secciones rectangulares o en T con armadura existente (Anejo 19, 6.1; 3.1.7; 9.2.1.1; 8.2)."
-      >
-        <StatusBadge status="pendiente_validacion" />
-      </PageHeader>
-
       <div className="grid gap-4 lg:grid-cols-[minmax(320px,400px)_1fr]">
         {/* Entrada de datos */}
         <div className="space-y-4">

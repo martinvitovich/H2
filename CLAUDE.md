@@ -60,23 +60,26 @@ npm run build      # compila frontend
 npm run start      # compila y sirve todo desde FastAPI (:8000)
 ```
 
-## Estado real de los módulos (v0.2.0)
+## Estado real de los módulos (v0.3.0)
 | Módulo | Estado |
 |---|---|
 | Parámetros normativos | Cotejados con el texto oficial (BOE); pendiente solo la ductilidad de aceros (Arts. 34-35 CE) |
 | Materiales (tabla A19.3.1, 3.1.3, 3.1.6, 3.1.7, 3.1.8, 3.2.7) | Implementado y cotejado · falta contraste bibliográfico |
 | Secciones rectangular/T, varias capas, 8.2(2)-(3) | Implementado y cotejado · falta contraste bibliográfico |
 | Vigas — flexión ELU (dimensionado rectangular, comprobación rect./T; 9.2.1.1, 9.2.1.2(3)) | Implementado y cotejado · falta contraste bibliográfico |
-| Proyectos (JSON v1) e informes PDF | Implementado |
-| Cortante, losas, pilares, ELS fisuración y deformaciones | No disponible |
+| Vigas — cortante ELU (V_Rd,c, cercos 45°–90°, bielas, 9.2.2) | Implementado y cotejado · falta contraste bibliográfico |
+| Proyectos (JSON v1, elementos viga_flexion y viga_cortante) e informes PDF | Implementado |
+| Losas, pilares, ELS fisuración y deformaciones | No disponible |
 
 ## Pendiente
 - Contraste con ejemplos resueltos de bibliografía verificable (para pasar a «verificado»).
 - Consultar los Arts. 34-35 del Código Estructural (ductilidad de aceros) y 43.4.1 (recubrimientos).
-- Fase 3: cortante (6.2) y estribos. Fase 4: pilares, interacción N–M, 5.8.
+- Cortante: reducción β por cargas próximas a apoyos, rasante ala-alma (6.2.4), torsión (6.3),
+  barras levantadas, comprobación de la armadura longitudinal con ΔF_td.
+- Fase 4: pilares, interacción N–M, 5.8.
 - Fase 5: fisuración (7.3) y flechas (7.4). Fase 6: consolidación.
 - Dimensionado de secciones en T; armadura de montaje/piel; flexión compuesta.
 - Recubrimientos por durabilidad (4.4.1) y anchura eficaz (5.3.2.1).
 
 ## Decisiones
-Ver `docs/decisiones.md` (D1–D14).
+Ver `docs/decisiones.md` (D1–D16).

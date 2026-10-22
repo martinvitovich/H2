@@ -58,7 +58,7 @@ export function ELU({ modules }: { modules: ModuleInfo[] }) {
   const st = (id: string) => modules.find((m) => m.id === id)?.status ?? "no_disponible";
   const rows = [
     { id: "vigas_flexion", name: "Flexión simple (vigas)", ref: "6.1", link: "/vigas" },
-    { id: "vigas_cortante", name: "Cortante y estribos", ref: "6.2", link: null },
+    { id: "vigas_cortante", name: "Cortante y cercos (vigas)", ref: "6.2, 9.2.2", link: "/vigas?calc=cortante" },
     { id: "pilares", name: "Flexocompresión y segundo orden", ref: "6.1, 5.8", link: null },
   ];
   return (

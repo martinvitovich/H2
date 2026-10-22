@@ -6,6 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from core.elu.cortante import ShearInput
 from core.elu.flexion import FlexureInput
 from core.parameters import ParameterSet
 from core.section import Layer, RectangularShape, ReinforcedSection, TShape
@@ -84,6 +85,45 @@ class FlexureRequest(BaseModel):
             params=ParameterSet(self.parameter_overrides), element_name=self.element_name,
             secondary_element=self.secondary_element, stirrup_spacing=self.stirrup_spacing,
         )
+
+
+class ShearRequest(BaseModel):
+    element_name: str = Field("Viga", max_length=120)
+    mode: Literal["design", "check"] = "design"
+    shape: ShapeIn
+    cover: float = Field(30, gt=0, le=200, description="Recubrimiento nominal hasta el cerco (mm)")
+    stirrup_diameter: float = Field(8, gt=0, le=20, description="Diámetro de los cercos (mm)")
+    stirrup_legs: int = Field(2, ge=2, le=8)
+    stirrup_spacing: float | None = Field(None, gt=0, le=1000, description="Separación de cercos (mm), comprobación")
+    alpha_deg: float = Field(90, ge=45, le=90, description="Inclinación de los cercos (°)")
+    dg: float = Field(20, ge=4, le=63)
+    layers: list[LayerIn] = Field(default_factory=list)
+    tension_face: Literal["inferior", "superior"] = "inferior"
+    V_Ed_kN: float = Field(..., ge=0, le=1e5, description="Cortante de cálculo (kN), valor absoluto")
+    N_Ed_kN: float = Field(0, ge=-1e5, le=1e5, description="Axil concomitante (kN), compresión positiva")
+    concrete_class: str = "C25/30"
+    stirrup_grade: str = "B500S"
+    situation: Literal["persistente", "transitoria", "accidental"] = "persistente"
+    cot_theta: float | None = Field(None, description="cot θ fijado por el usuario; vacío = automático")
+    nu1_simplified: bool = False
+    parameter_overrides: dict[str, Any] = Field(default_factory=dict)
+
+    def build(self) -> ShearInput:
+        return ShearInput(
+            shape=self.shape.build(), cover=self.cover, stirrup_diameter=self.stirrup_diameter,
+            layers=[l.build() for l in self.layers], V_Ed_kn=self.V_Ed_kN, tension_face=self.tension_face,
+            N_Ed_kn=self.N_Ed_kN, concrete_class=self.concrete_class, stirrup_grade=self.stirrup_grade,
+            situation=self.situation, dg=self.dg, stirrup_legs=self.stirrup_legs, alpha_deg=self.alpha_deg,
+            stirrup_spacing=self.stirrup_spacing, mode=self.mode, cot_theta=self.cot_theta,
+            nu1_simplified=self.nu1_simplified, params=ParameterSet(self.parameter_overrides),
+            element_name=self.element_name,
+        )
+
+
+class ShearReportRequest(BaseModel):
+    project_name: str = Field("Proyecto sin título", max_length=200)
+    author: str = Field("", max_length=200)
+    request: ShearRequest
 
 
 class MaterialRequest(BaseModel):

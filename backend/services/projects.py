@@ -5,15 +5,15 @@ Formato de almacenamiento (``format_version`` = 1)::
     {
       "format": "ha-anejo19-project",
       "format_version": 1,
-      "software_version": "0.2.0",
+      "software_version": "0.3.0",
       "id": "<uuid>",
       "name": "...", "description": "...",
       "created": "<ISO 8601>", "modified": "<ISO 8601>",
       "norm": {"id": ..., "name": ..., "edition": ...},
       "parameter_overrides": {...},
       "elements": [
-        {"id": "<uuid>", "type": "viga_flexion", "name": "...",
-         "input": {... FlexureRequest ...}, "result": {...} | null}
+        {"id": "<uuid>", "type": "viga_flexion" | "viga_cortante", "name": "...",
+         "input": {... FlexureRequest | ShearRequest ...}, "result": {...} | null}
       ]
     }
 
@@ -36,7 +36,7 @@ from version import __version__
 
 FORMAT_ID = "ha-anejo19-project"
 FORMAT_VERSION = 1
-ELEMENT_TYPES = {"viga_flexion"}
+ELEMENT_TYPES = {"viga_flexion", "viga_cortante"}
 
 _ID_RE = re.compile(r"^[0-9a-f]{32}$")
 
