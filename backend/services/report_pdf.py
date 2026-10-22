@@ -112,6 +112,37 @@ def _section_drawing(geometry: dict, width_pt: float = 70 * mm) -> Drawing:
     return d
 
 
+def _interaction_drawing(R: dict, W: float = 120 * mm, H: float = 80 * mm) -> Drawing:
+    from reportlab.graphics.shapes import Line, PolyLine
+    pts = R["diagram"]
+    Ms = [q["M_kNm"] for q in pts] + [p["M_kNm"] for p in R["design_points"]]
+    Ns = [q["N_kN"] for q in pts] + [p["N_kN"] for p in R["design_points"]]
+    m0, m1 = min(Ms + [0]), max(Ms + [0])
+    n0, n1 = min(Ns + [0]), max(Ns + [0])
+    pad = 28
+    d = Drawing(W, H)
+
+    def X(m):
+        return pad + (m - m0) / (m1 - m0 or 1) * (W - 2 * pad)
+
+    def Y(n):
+        return pad + (n - n0) / (n1 - n0 or 1) * (H - 2 * pad)
+
+    d.add(Line(X(0), Y(n0), X(0), Y(n1), strokeColor=colors.grey, strokeWidth=0.4))
+    d.add(Line(X(m0), Y(0), X(m1), Y(0), strokeColor=colors.grey, strokeWidth=0.4))
+    poly = []
+    for q in pts + pts[:1]:
+        poly += [X(q["M_kNm"]), Y(q["N_kN"])]
+    d.add(PolyLine(poly, strokeColor=colors.HexColor("#1f3a5f"), strokeWidth=1.2))
+    for p in R["design_points"]:
+        d.add(Circle(X(p["M_kNm"]), Y(p["N_kN"]), 2.5, fillColor=colors.HexColor("#b03a2e"), strokeColor=None))
+    d.add(String(W / 2 - 40, 4, "M [kN·m]  (diagrama N–M, 6.1)", fontName="DejaVu", fontSize=6))
+    d.add(String(2, H - 10, "N [kN] (compresión +)", fontName="DejaVu", fontSize=6))
+    d.add(String(X(m1) - 30, Y(n1) - 8, f"{n1:.0f}", fontName="DejaVu", fontSize=5))
+    d.add(String(X(m1) - 20, Y(0) + 2, f"{m1:.0f}", fontName="DejaVu", fontSize=5))
+    return d
+
+
 def build_flexure_report(result: dict, request: dict, project_name: str = "", author: str = "") -> bytes:
     geom = None
     lines: list[str] = []
@@ -148,8 +179,23 @@ def build_shear_report(result: dict, request: dict, project_name: str = "", auth
     return _build_report(result, request, project_name, author, R.get("geometry"), lines)
 
 
+def build_column_report(result: dict, request: dict, project_name: str = "", author: str = "") -> bytes:
+    R = result["result"]
+    k = 1e6
+    lines = [
+        f"l_0 = {_num(R['l0'], 0)} mm; λ = {_num(R['lambda'], 2)}; λ_lim = {_num(R['lambda_lim'], 2)} → "
+        f"{'se consideran' if R['second_order'] else 'se desprecian'} los efectos de segundo orden.",
+        f"e_i = {_num(R['e_i'], 2)} mm; e_0 = {_num(R['e_0'], 1)} mm; M_0Ed = {_num(R['M0Ed'] / k, 2)} kN·m; "
+        f"M_2 = {_num(R['M2'] / k, 2)} kN·m; M_Ed = {_num(R['MEd_crit'] / k, 2)} kN·m.",
+        f"N_Ed = {_num(float(request['N_Ed_kN']), 1)} kN; N_Rd,max = {_num(R['N_Rd_max'] / 1e3, 1)} kN"
+        + (f"; M_Rd(N_Ed) = {_num(R['MRd'] / k, 2)} kN·m." if R.get("MRd") is not None else "."),
+    ]
+    geom = R.get("geometry")
+    return _build_report(result, request, project_name, author, geom, lines, diagram=R)
+
+
 def _build_report(result: dict, request: dict, project_name: str, author: str, geom: dict | None,
-                  result_lines: list[str]) -> bytes:
+                  result_lines: list[str], diagram: dict | None = None) -> bytes:
     _register_fonts()
     S = _styles()
     tr = result["trace"]
@@ -242,6 +288,9 @@ def _build_report(result: dict, request: dict, project_name: str, author: str, g
     for line in result_lines:
         E.append(Spacer(1, 3))
         E.append(_p(line, S["base"]))
+    if diagram is not None:
+        E.append(Spacer(1, 4))
+        E.append(_interaction_drawing(diagram))
 
     # Hipótesis
     E.append(_p("4. Hipótesis de cálculo", S["h2"]))

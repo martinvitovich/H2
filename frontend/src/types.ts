@@ -32,7 +32,7 @@ export interface Parameter {
   max_value: number | null;
 }
 
-export type Face = "inferior" | "superior";
+export type Face = "inferior" | "superior" | "lateral";
 
 export interface LayerIn {
   face: Face;
@@ -249,9 +249,73 @@ export interface ShearResult {
   request: ShearRequest;
 }
 
+export interface ColumnRequest {
+  element_name: string;
+  b: number;
+  h: number;
+  cover: number;
+  stirrup_diameter: number;
+  stirrup_spacing: number | null;
+  dg: number;
+  layers: LayerIn[];
+  N_Ed_kN: number;
+  M01_kNm: number;
+  M02_kNm: number;
+  length: number;
+  braced: boolean;
+  l0_mode: "beta" | "k";
+  beta: number | null;
+  k1: number | null;
+  k2: number | null;
+  transverse_load: boolean;
+  M0_span_kNm: number | null;
+  phi_ef: number | null;
+  phi_inf: number | null;
+  m0eqp_ratio: number | null;
+  ei_simplified: boolean;
+  intermediate_bars_tied: boolean;
+  concrete_class: string;
+  steel_grade: string;
+  steel_branch: "horizontal" | "inclinada";
+  situation: "persistente" | "transitoria" | "accidental";
+  parameter_overrides: Record<string, unknown>;
+}
+
+export interface ColumnResult {
+  ok: boolean | null;
+  trace: Trace;
+  materials: { concrete: Record<string, number | string>; steel: Record<string, number | string | null> };
+  result: {
+    l0: number;
+    i: number;
+    lambda: number;
+    lambda_lim: number;
+    second_order: boolean;
+    omega: number;
+    n: number;
+    phi_ef: number | null;
+    e_i: number;
+    e_0: number;
+    M0e: number;
+    M0Ed: number;
+    M2: number;
+    MEd_crit: number;
+    MEd_end: number;
+    N_Rd_max: number;
+    MRd?: number;
+    MRd_domain?: string;
+    s_cl_max?: number;
+    geometry: Geometry;
+    diagram: { N_kN: number; M_kNm: number; domain: string }[];
+    design_points: { label: string; N_kN: number; M_kNm: number }[];
+  };
+  request: ColumnRequest;
+}
+
 export type ProjectElement =
   | { id?: string; type: "viga_flexion"; name: string; input: FlexureRequest; result?: { ok: boolean | null; summary?: string } | null }
-  | { id?: string; type: "viga_cortante"; name: string; input: ShearRequest; result?: { ok: boolean | null; summary?: string } | null };
+  | { id?: string; type: "viga_cortante"; name: string; input: ShearRequest; result?: { ok: boolean | null; summary?: string } | null }
+  | { id?: string; type: "pilar"; name: string; input: ColumnRequest; result?: { ok: boolean | null; summary?: string } | null };
 
 export interface Project {
   id: string;

@@ -1,0 +1,13 @@
+{
+  "element_name": "P-ejemplo-1",
+  "b": 400, "h": 400, "cover": 35, "stirrup_diameter": 8, "stirrup_spacing": 200, "dg": 20,
+  "layers": [
+    {"face": "inferior", "n": 3, "diameter": 16},
+    {"face": "superior", "n": 3, "diameter": 16},
+    {"face": "lateral", "n": 1, "diameter": 16}
+  ],
+  "N_Ed_kN": 1500, "M01_kNm": 20, "M02_kNm": 40,
+  "length": 5000, "braced": true, "l0_mode": "beta", "beta": 1.0,
+  "phi_inf": 2.0, "m0eqp_ratio": 0.6,
+  "concrete_class": "C25/30", "steel_grade": "B500S"
+}

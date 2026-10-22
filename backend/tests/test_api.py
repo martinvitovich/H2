@@ -135,3 +135,21 @@ def test_project_with_shear_element(client):
     el = {"type": "viga_cortante", "name": "V-1 cortante", "input": SHEAR}
     r = client.post("/api/proyectos", json={"name": "P", "elements": [el]})
     assert r.status_code == 201
+
+
+COLUMN = {"b": 400, "h": 400, "cover": 35, "N_Ed_kN": 1500, "M01_kNm": 20, "M02_kNm": 40, "length": 3000,
+          "phi_ef": 1.0, "stirrup_spacing": 200,
+          "layers": [{"face": "inferior", "n": 3, "diameter": 16}, {"face": "superior", "n": 3, "diameter": 16},
+                     {"face": "lateral", "n": 1, "diameter": 16}]}
+
+
+def test_column_endpoint_and_report(client):
+    r = client.post("/api/pilares", json=COLUMN)
+    assert r.status_code == 200, r.text
+    assert r.json()["result"]["diagram"]
+    r = client.post("/api/informes/pilares", json={"request": COLUMN})
+    assert r.status_code == 200 and r.content[:5] == b"%PDF-"
+    assert client.post("/api/pilares", json={**COLUMN, "N_Ed_kN": 0}).status_code == 422
+    assert client.post("/api/pilares", json={**COLUMN, "b": 100, "h": 500}).status_code == 422
+    r = client.post("/api/proyectos", json={"name": "P", "elements": [{"type": "pilar", "name": "P-1", "input": COLUMN}]})
+    assert r.status_code == 201

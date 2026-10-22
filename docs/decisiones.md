@@ -92,3 +92,18 @@ V_Rd,max (cot θ* = −cot α + √(cot²α + 1)). El usuario puede fijar cot θ
 Separación = min(A_sw/(A_sw/s)_nec; s_l,max), redondeada hacia abajo a múltiplos de 25 mm
 (criterio no normativo, configurable), descartando las que no respetan la separación libre de
 8.2(2). Se ofrecen alternativas con φ6–φ12 y 2 o 4 ramas.
+
+## D17 — Secciones críticas del pilar
+Arriostrado sin cargas transversales: sección intermedia con M_Ed = max(M_0e + N·e_i + M_2; N·e_0)
+y extremo con M_Ed = max(|M02|; N·e_0) (la nota de 5.8.7.3(3) advierte que los momentos de
+extremo pueden superar a los equivalentes). Con cargas transversales: M_0 = momento máximo de
+vano introducido por el usuario. No arriostrado: sección crítica en el extremo con M02 + N·e_i + M_2.
+
+## D18 — Dominio A con rama horizontal del acero
+Con la rama horizontal el Anejo no limita la deformación del acero; para recorrer los planos
+del dominio A se fija numéricamente ε_s = 100 ‰ en la armadura más traccionada. El efecto en
+la envolvente es despreciable y del lado de la seguridad (subconjunto de planos admisibles).
+
+## D19 — Segundo orden solo si hay datos suficientes
+Si λ > λ_lim y falta φ_ef, o la armadura no es simétrica (requisito de 5.8.8.3(1)), la
+verificación de flexocompresión queda «no evaluable» y no se declara conforme.

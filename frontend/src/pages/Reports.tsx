@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { api, downloadBlob } from "../api/client";
 import { ErrorBox, PageHeader } from "../components/ui";
 import { useAppState } from "../state/AppState";
-import type { FlexureRequest, Project, ProjectElement, ShearRequest } from "../types";
+import type { ColumnRequest, FlexureRequest, Project, ProjectElement, ShearRequest } from "../types";
 
 export default function Reports() {
-  const { beam, shear, overrides, activeProject } = useAppState();
+  const { beam, shear, column, overrides, activeProject } = useAppState();
   const [project, setProject] = useState<Project | null>(null);
   const [author, setAuthor] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +24,10 @@ export default function Reports() {
       const blob =
         el.type === "viga_flexion"
           ? await api.flexureReport({ project_name, author, request: el.input as FlexureRequest })
-          : await api.shearReport({ project_name, author, request: el.input as ShearRequest });
-      const prefix = el.type === "viga_flexion" ? "informe_" : "informe_cortante_";
+          : el.type === "viga_cortante"
+            ? await api.shearReport({ project_name, author, request: el.input as ShearRequest })
+            : await api.columnReport({ project_name, author, request: el.input as ColumnRequest });
+      const prefix = el.type === "viga_flexion" ? "informe_" : el.type === "viga_cortante" ? "informe_cortante_" : "informe_pilar_";
       downloadBlob(blob, `${prefix}${el.input.element_name.replace(/[^A-Za-z0-9_-]+/g, "_")}.pdf`);
     } catch (e) {
       setError((e as Error).message);
@@ -46,7 +48,7 @@ export default function Reports() {
       <ErrorBox error={error} />
       <div className="mt-2 grid gap-4 lg:grid-cols-2">
         <section className="card space-y-3">
-          <h2 className="h2">Elementos actuales (módulo Vigas)</h2>
+          <h2 className="h2">Elementos actuales (Vigas y Pilares)</h2>
           <p className="text-sm text-slate-600">
             {beam.element_name} · {beam.mode === "design" ? "dimensionado" : "comprobación"} · M_Ed = {beam.M_Ed_kNm} kN·m · {beam.concrete_class} · {beam.steel_grade}
           </p>
@@ -80,6 +82,31 @@ export default function Reports() {
           >
             {busy === "current-shear" ? "Generando…" : "Informe de cortante (PDF)"}
           </button>
+          <p className="text-sm text-slate-600">
+            Pilar: {column.element_name} · N_Ed = {column.N_Ed_kN} kN · M02 = {column.M02_kNm} kN·m
+          </p>
+          <button
+            className="btn-secondary"
+            disabled={busy !== null}
+            onClick={() =>
+              generate(
+                {
+                  type: "pilar",
+                  input: {
+                    ...column,
+                    beta: column.l0_mode === "beta" ? column.beta : null,
+                    k1: column.l0_mode === "k" ? column.k1 : null,
+                    k2: column.l0_mode === "k" ? column.k2 : null,
+                    M0_span_kNm: column.transverse_load ? column.M0_span_kNm : null,
+                    parameter_overrides: overrides,
+                  },
+                },
+                "current-column",
+              )
+            }
+          >
+            {busy === "current-column" ? "Generando…" : "Informe de pilar (PDF)"}
+          </button>
           <p className="text-[11px] text-slate-500">
             Para modificar los datos, vaya a{" "}
             <Link className="text-brand underline" to="/vigas">
@@ -106,7 +133,12 @@ export default function Reports() {
                   <span className="text-sm">
                     {el.name}{" "}
                     <span className="text-xs text-slate-500">
-                      · {el.type === "viga_flexion" ? `flexión · M_Ed = ${el.input.M_Ed_kNm} kN·m` : `cortante · V_Ed = ${el.input.V_Ed_kN} kN`}
+                      ·{" "}
+                      {el.type === "viga_flexion"
+                        ? `flexión · M_Ed = ${el.input.M_Ed_kNm} kN·m`
+                        : el.type === "viga_cortante"
+                          ? `cortante · V_Ed = ${el.input.V_Ed_kN} kN`
+                          : `pilar · N_Ed = ${el.input.N_Ed_kN} kN`}
                     </span>
                   </span>
                   <button className="btn-secondary text-xs" disabled={busy !== null} onClick={() => generate({ type: el.type, input: { ...el.input, parameter_overrides: project.parameter_overrides } } as ProjectElement, el.id ?? String(i))}>

@@ -26,6 +26,7 @@ export function LayersEditor({ layers, onChange }: { layers: LayerIn[]; onChange
                   <select className="input min-w-[96px]" value={l.face} onChange={(e) => set(i, { face: e.target.value as LayerIn["face"] })}>
                     <option value="inferior">inferior</option>
                     <option value="superior">superior</option>
+                    <option value="lateral">lateral (n por cara)</option>
                   </select>
                 </td>
                 <td className="pr-1 pb-1">
@@ -63,7 +64,8 @@ export function LayersEditor({ layers, onChange }: { layers: LayerIn[]; onChange
         + Añadir capa
       </button>
       <p className="mt-1 text-[11px] text-slate-500">
-        Capas sucesivas de la misma cara se apilan hacia el interior con la separación libre mínima de 8.2(2).
+        Capas sucesivas de la misma cara se apilan hacia el interior con la separación libre mínima de 8.2(2). La capa
+        «lateral» coloca n barras en cada cara lateral entre las capas superior e inferior.
       </p>
     </div>
   );

@@ -74,6 +74,30 @@ equivalen a «pág. BOE − 98284».
 | Reducción β por cargas próximas a apoyos | 6.2.2(6), 6.2.3(8) | **No implementado** | — | Limitación declarada |
 | Rasante ala-alma, juntas, torsión | 6.2.4, 6.2.5, 6.3 | **No implementado** | — | Limitación declarada |
 
+## Matriz de trazabilidad (pilares, v0.4.0)
+
+| Magnitud / regla | Apartado (BOE pág.) | Implementación | Valor oficial | Estado |
+|---|---|---|---|---|
+| Hipótesis y dominios de deformación (pivotes A, B, C) | 6.1(2)-(3), figura A19.6.1 (98357-98358) | `nm.py` | ε_cu2 / ε_c2 a (1 − ε_c2/ε_cu2)·h / ε_ud | Verificado |
+| Excentricidad mínima | 6.1(4) (98357) | `pilares.py` | e_0 = h/30 ≥ 20 mm | Verificado |
+| Imperfecciones | 5.2(5)-(7), (5.1)-(5.2) (98330) | `pilares.py` | θ_0 = 1/200; α_h = 2/√l ∈ [2/3, 1]; α_m = √(0,5(1 + 1/m)); e_i = θ_i·l_0/2 | Verificado (m = 1, elemento aislado) |
+| e_i simplificada | 5.2(7) a), 5.2(9) (98330-98331) | opción | e_i = l_0/400 (pilares arriostrados) | Verificado |
+| Despreciar el segundo orden | 5.8.2(6), 5.8.3.1 (98340-98341) | `pilares.py` | λ ≤ λ_lim = 20·A·B·C/√n | Verificado; **errata en B**, ver abajo |
+| r_m | 5.8.3.1(1) (98340-98341) | `pilares.py` | M01/M02; r_m = 1 si no arriostrado o con cargas transversales | Verificado |
+| Esbeltez | 5.8.3.2(1), (5.14) (98341) | `pilares.py` | λ = l_0/i (sección bruta) | Verificado |
+| Longitud efectiva | figura A19.5.7, (5.15), (5.16) (98341) | `_l0` | β·l; arriostrados/no arriostrados con k1, k2 (mín. recomendado 0,1) | Verificado |
+| Fluencia eficaz | 5.8.4(2), (5.19) (98343) | `pilares.py` | φ_ef = φ(∞,t_0)·M_0Eqp/M_0Ed | Verificado (φ(∞,t_0) lo aporta el usuario; 3.1.4 no implementado) |
+| Momento equivalente | 5.8.8.2(2), (5.32) (98347) | `pilares.py` | M_0e = 0,6·M02 + 0,4·M01 ≥ 0,4·M02 | Verificado |
+| Curvatura nominal | 5.8.8.2-5.8.8.3, (5.31)-(5.37) (98347-98348) | `pilares.py` | M_2 = N·e_2; e_2 = (1/r)·l_0²/c; c = 10 (8 con M de primer orden constante); 1/r_0 = ε_yd/(0,45d); d = h/2 + i_s; K_r con n_bal = 0,4; K_φ = 1 + β·φ_ef | Verificado (exige sección simétrica) |
+| Pilar: h ≤ 4b | 9.5.1(1) (98433) | validación | — | Verificado |
+| φ_min longitudinal | 9.5.2(1) (98433) | check | 12 mm | Verificado |
+| **Armadura mínima por cara** | 9.5.2(2) (98434) | check | **A′_s,min = 0,05·N_Ed/f_yc,d, f_yc,d = f_yd ≯ 400 MPa** (propia del Anejo; distinta de la EN 1992-1-1) | Verificado |
+| A_s,max | 9.5.2(3) (98434) | check | 0,04·A_c (0,08 en solapes, no comprobado) | Verificado |
+| Barras de esquina | 9.5.2(4) (98434) | check | una por esquina | Verificado |
+| Armadura transversal | 9.5.3(1), (3), (4), (6) (98434-98435) | checks | φ_t ≥ max(6; φ_max/4); s_cl,max = min(15·φ_min; 300; min(b, h)); 0,6 en zonas indicadas; barras a ≤ 150 mm de una sujeta | Verificado; ver nota sobre «G» |
+| Flexión esviada | 5.8.9 | **No implementado** | — | Limitación declarada |
+| Métodos de rigidez nominal y general | 5.8.7, 5.8.6 | **No implementado** | — | Limitación declarada |
+
 ## Erratas detectadas en el texto oficial
 
 1. **ε_c2 en la tabla A19.3.1 (pág. 98308).** La columna de relaciones analíticas imprime
@@ -86,6 +110,13 @@ equivalen a «pág. BOE − 98284».
 3. **f_ctk,0,05 de C60/75.** La tabla da 3,1 MPa, mientras que 0,7·f_ctm (con f_ctm = 4,355 sin
    redondear) da 3,05. El valor tabulado procede de aplicar 0,7 a f_ctm ya redondeada. Es una
    diferencia de redondeo, no de fórmula.
+4. **Coeficiente B de la esbeltez límite (5.13), pág. 98340.** El texto imprime
+   «B = 1 + √(1 + 2ω) (si ω no es conocido, se puede usar B = 1,1)». Con esa expresión B ≥ 2 para
+   cualquier ω ≥ 0, incompatible con el valor por defecto 1,1 del mismo apartado, y λ_lim casi se
+   duplicaría (del lado de la inseguridad). Se adopta B = √(1 + 2ω), coherente con B = 1,1
+   (ω ≈ 0,1). Test: `test_slenderness_and_limit_manual`.
+5. **s_cl,max en 9.5.3(3), pág. 98434.** El texto imprime «min(G, h)»; «G» no está definido. Se
+   interpreta como la menor dimensión de la sección, min(b, h) (lectura del lado de la seguridad).
 
 ## Dependencias respecto de otras disposiciones (no consultadas)
 

@@ -19,23 +19,6 @@ export function Slabs() {
   );
 }
 
-export function Columns() {
-  return (
-    <>
-      <PageHeader title="Pilares" subtitle="Flexocompresión y efectos de segundo orden." />
-      <NotAvailable
-        title="Pilares — flexocompresión (fase 4)"
-        planned={[
-          "Diagramas de interacción N–M por compatibilidad de deformaciones (6.1).",
-          "Esbeltez, longitud efectiva y efectos de segundo orden (5.8).",
-          "Excentricidades e imperfecciones geométricas (5.2, 6.1(4)).",
-          "No se declarará conforme un pilar si faltan datos de apoyo, longitud efectiva o excentricidades.",
-        ]}
-      />
-    </>
-  );
-}
-
 export function ELS() {
   return (
     <>
@@ -56,10 +39,10 @@ export function ELS() {
 
 export function ELU({ modules }: { modules: ModuleInfo[] }) {
   const st = (id: string) => modules.find((m) => m.id === id)?.status ?? "no_disponible";
-  const rows = [
+  const rows: { id: string; name: string; ref: string; link: string | null }[] = [
     { id: "vigas_flexion", name: "Flexión simple (vigas)", ref: "6.1", link: "/vigas" },
     { id: "vigas_cortante", name: "Cortante y cercos (vigas)", ref: "6.2, 9.2.2", link: "/vigas?calc=cortante" },
-    { id: "pilares", name: "Flexocompresión y segundo orden", ref: "6.1, 5.8", link: null },
+    { id: "pilares", name: "Flexocompresión y segundo orden (pilares)", ref: "6.1, 5.2, 5.8, 9.5", link: "/pilares" },
   ];
   return (
     <>

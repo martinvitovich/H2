@@ -20,7 +20,7 @@ class SectionError(ValueError):
     pass
 
 
-Face = Literal["inferior", "superior"]
+Face = Literal["inferior", "superior", "lateral"]
 
 
 @dataclass(frozen=True)
@@ -144,8 +144,10 @@ class Layer:
     depth: float | None = None  # distancia desde la cara al centro de las barras (opcional)
 
     def validate(self) -> None:
-        if self.face not in ("inferior", "superior"):
-            raise SectionError("La cara de la capa debe ser 'inferior' o 'superior'")
+        if self.face not in ("inferior", "superior", "lateral"):
+            raise SectionError("La cara de la capa debe ser 'inferior', 'superior' o 'lateral'")
+        if self.face == "lateral" and self.depth is not None:
+            raise SectionError("Las barras laterales se reparten automáticamente: no admiten profundidad")
         if self.n < 1 or self.n > 30:
             raise SectionError("El número de barras por capa debe estar entre 1 y 30")
         if self.face == "inferior" and self.n < 2:
@@ -246,6 +248,7 @@ class ReinforcedSection:
                 for x in xs:
                     self.bars.append(Bar(x, y, L.diameter, idx + 1, face))
                 prev_depth, prev_diam = depth, L.diameter
+        self._place_lateral(x0, bw, edge)
         for b in self.bars:
             if not (0 < b.y < self.shape.h):
                 raise SectionError("Hay barras fuera del canto de la sección")
@@ -254,6 +257,33 @@ class ReinforcedSection:
         if bot and top:
             if min(b.y - b.diameter / 2 for b in bot) <= max(b.y + b.diameter / 2 for b in top):
                 raise SectionError("Las armaduras superior e inferior se solapan")
+
+    def _place_lateral(self, x0: float, bw: float, edge: float) -> None:
+        """Barras intermedias en cada cara lateral: n por cara, repartidas uniformemente entre la
+        primera capa superior y la primera capa inferior (pilares, armadura de piel)."""
+        lat = [l for l in self.layers if l.face == "lateral"]
+        if not lat:
+            return
+        if len(lat) > 1:
+            raise SectionError("Defina una sola capa lateral (n barras por cara lateral)")
+        L = lat[0]
+        top = [b for b in self.bars if b.face == "superior" and b.layer == 1]
+        bot = [b for b in self.bars if b.face == "inferior" and b.layer == 1]
+        if not top or not bot:
+            raise SectionError("Las barras laterales requieren armadura en las caras superior e inferior")
+        ya, yb = top[0].y, bot[0].y
+        step = (yb - ya) / (L.n + 1)
+        smin = min_clear_spacing(L.diameter, self.dg, self.params)
+        dmax = max(L.diameter, top[0].diameter, bot[0].diameter)
+        if step - (L.diameter + dmax) / 2 < smin - 1e-9:
+            self.issues.append(f"Barras laterales: separación libre vertical {step - (L.diameter + dmax) / 2:.1f} mm "
+                               f"< s_min = {smin:.1f} mm (8.2(2))")
+        xl = x0 + edge + L.diameter / 2
+        xr = x0 + bw - edge - L.diameter / 2
+        for i in range(1, L.n + 1):
+            y = ya + i * step
+            self.bars.append(Bar(xl, y, L.diameter, 1, "lateral"))
+            self.bars.append(Bar(xr, y, L.diameter, 1, "lateral"))
 
     # --- propiedades ---
     def bars_on(self, face: Face) -> list[Bar]:
@@ -288,7 +318,8 @@ class ReinforcedSection:
             "Ig": s.inertia,
             "As_inferior": As_inf,
             "As_superior": As_sup,
-            "As_total": As_inf + As_sup,
+            "As_lateral": self.area_on("lateral"),
+            "As_total": sum(b.area for b in self.bars),
             "d_inferior": self.centroid_depth("inferior"),
             "d_superior": self.centroid_depth("superior"),
             "bars": [b.__dict__ for b in self.bars],

@@ -1,4 +1,6 @@
 import type {
+  ColumnRequest,
+  ColumnResult,
   FlexureRequest,
   FlexureResult,
   ModuleInfo,
@@ -89,6 +91,8 @@ export const api = {
   shear: (body: ShearRequest) => post<ShearResult>("/vigas/cortante", body),
   shearReport: (body: { project_name: string; author: string; request: ShearRequest }) =>
     pdf("/informes/vigas/cortante", body),
+  column: (body: ColumnRequest) => post<ColumnResult>("/pilares", body),
+  columnReport: (body: { project_name: string; author: string; request: ColumnRequest }) => pdf("/informes/pilares", body),
   projects: () => request<ProjectSummary[]>("/proyectos"),
   project: (id: string) => request<Project>(`/proyectos/${id}`),
   createProject: (body: Partial<Project>) => post<Project>("/proyectos", body),

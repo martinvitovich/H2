@@ -11,7 +11,8 @@ import Beams from "./pages/Beams";
 import Projects from "./pages/Projects";
 import Reports from "./pages/Reports";
 import NormConfig from "./pages/NormConfig";
-import { Columns, ELS, ELU, Slabs } from "./pages/Placeholders";
+import Columns from "./pages/Columns";
+import { ELS, ELU, Slabs } from "./pages/Placeholders";
 
 const NAV = [
   { to: "/", label: "Inicio" },

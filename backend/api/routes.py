@@ -9,15 +9,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
 from core.elu.cortante import shear_beam
+from core.elu.pilares import column_check
 from core.elu.flexion import check_flexure, design_flexure
 from core.materials import CONCRETE_FCK_CLASSES, STEEL_GRADES, Concrete, ReinforcingSteel, stress_strain_curves
 from core.parameters import ParameterSet, norm_info
 from core.status import MODULES
 from services.projects import ProjectStore
-from services.report_pdf import build_flexure_report, build_shear_report
+from services.report_pdf import build_column_report, build_flexure_report, build_shear_report
 from version import SOFTWARE_NAME, __version__
 
-from .schemas import (FlexureRequest, MaterialRequest, ProjectIn, ReportRequest, SectionRequest, ShearReportRequest,
+from .schemas import (ColumnReportRequest, ColumnRequest, FlexureRequest, MaterialRequest, ProjectIn, ReportRequest, SectionRequest, ShearReportRequest,
                       ShearRequest)
 
 router = APIRouter(prefix="/api")
@@ -114,6 +115,22 @@ def beam_shear_report(req: ShearReportRequest) -> Response:
     res = shear_beam(req.request.build())
     pdf = build_shear_report(res, req.request.model_dump(), req.project_name, req.author)
     fn = _safe_filename(f"informe_cortante_{req.request.element_name}") + ".pdf"
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{fn}"'})
+
+
+@router.post("/pilares")
+def column(req: ColumnRequest) -> dict:
+    res = column_check(req.build())
+    res["request"] = req.model_dump()
+    return res
+
+
+@router.post("/informes/pilares")
+def column_report(req: ColumnReportRequest) -> Response:
+    res = column_check(req.request.build())
+    pdf = build_column_report(res, req.request.model_dump(), req.project_name, req.author)
+    fn = _safe_filename(f"informe_pilar_{req.request.element_name}") + ".pdf"
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{fn}"'})
 

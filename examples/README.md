@@ -7,4 +7,5 @@ son valores de referencia validados**; sirven para reproducir y revisar el proce
 backend/.venv/bin/python examples/run_example.py examples/viga_rect_dimensionado.json
 backend/.venv/bin/python examples/run_example.py examples/viga_T_comprobacion.json --pdf informe.pdf
 backend/.venv/bin/python examples/run_example.py examples/viga_cortante.json
+backend/.venv/bin/python examples/run_example.py examples/pilar.json
 ```
