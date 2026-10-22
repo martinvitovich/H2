@@ -112,6 +112,29 @@ def _section_drawing(geometry: dict, width_pt: float = 70 * mm) -> Drawing:
     return d
 
 
+def build_crack_report(result: dict, request: dict, project_name: str = "", author: str = "") -> bytes:
+    R = result["result"]
+    lines = [f"M_cr = {_num(R['Mcr'] / 1e6, 2)} kN·m; x = {_num(R['x'], 1)} mm; σ_s = {_num(R['sigma_s'], 1)} MPa; "
+             f"σ_c = {_num(R['sigma_c'], 2)} MPa (combinación cuasi-permanente).",
+             f"w_k = {_num(R['w_k'], 3)} mm frente a w_max = {_num(R['w_max'], 2)} mm."]
+    return _build_report(result, request, project_name, author, R.get("geometry"), lines)
+
+
+def build_deflection_report(result: dict, request: dict, project_name: str = "", author: str = "") -> bytes:
+    R = result["result"]
+    lines = []
+    if R.get("ld"):
+        lines.append(f"Método simplificado: l/d = {_num(R['ld']['actual'], 2)} frente a (l/d)_lim = {_num(R['ld']['limit'], 2)}.")
+    C = R.get("calc")
+    if C:
+        lines.append(f"φ = {_num(C['phi'], 3)}; ε_cs = {_num(C['eps_cs'] * 1000, 3)} ‰; E_c,eff = {_num(C['E_eff'], 0)} MPa; "
+                     f"M_cr = {_num(C['Mcr'] / 1e6, 2)} kN·m.")
+        lines.append(f"Flechas: instantánea {_num(C['delta_inst'], 2)} mm; total {_num(C['delta_total'], 2)} mm "
+                     f"(L/250 = {_num(C['limit_total'], 2)} mm); diferida {_num(C['delta_deferred'], 2)} mm "
+                     f"(L/500 = {_num(C['limit_deferred'], 2)} mm).")
+    return _build_report(result, request, project_name, author, R.get("geometry"), lines)
+
+
 def _interaction_drawing(R: dict, W: float = 120 * mm, H: float = 80 * mm) -> Drawing:
     from reportlab.graphics.shapes import Line, PolyLine
     pts = R["diagram"]

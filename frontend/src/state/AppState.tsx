@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import type { ColumnRequest, FlexureRequest, ShearRequest } from "../types";
+import type { ColumnRequest, ElsState, FlexureRequest, ShearRequest } from "../types";
 
 /** Estado global de la interfaz. Solo datos de conveniencia del usuario (borradores y
  * parámetros editados); los cálculos se ejecutan siempre en el backend. */
@@ -87,6 +87,40 @@ export const DEFAULT_COLUMN: ColumnRequest = {
   parameter_overrides: {},
 };
 
+export const DEFAULT_ELS: ElsState = {
+  element_name: "V-1",
+  shape: { kind: "rectangular", b: 300, h: 500, bf: 800, hf: 120, bw: 300 },
+  cover: 30,
+  stirrup_diameter: 8,
+  dg: 20,
+  layers: [
+    { face: "inferior", n: 3, diameter: 20 },
+    { face: "superior", n: 2, diameter: 12 },
+  ],
+  concrete_class: "C25/30",
+  steel_grade: "B500S",
+  M_qp_kNm: 90,
+  M_char_kNm: 120,
+  exposure: "XC1",
+  w_max: null,
+  long_term: true,
+  span: 6000,
+  system: "biapoyada",
+  M_qp_defl_kNm: 90,
+  RH: 60,
+  t0: 28,
+  cement: "N",
+  perimeter: null,
+  phi_override: null,
+  eps_cs_override: null,
+  camber: 0,
+  kM: null,
+  kcs: null,
+  As_req: 800,
+  As2_req: 0,
+  fragile_partitions: false,
+};
+
 interface AppState {
   overrides: Record<string, unknown>;
   setOverrides: (o: Record<string, unknown>) => void;
@@ -96,6 +130,8 @@ interface AppState {
   setShear: (s: ShearRequest) => void;
   column: ColumnRequest;
   setColumn: (c: ColumnRequest) => void;
+  els: ElsState;
+  setEls: (e: ElsState) => void;
   activeProject: { id: string; name: string } | null;
   setActiveProject: (p: { id: string; name: string } | null) => void;
 }
@@ -124,6 +160,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [beam, setB] = useState<FlexureRequest>(() => ({ ...DEFAULT_BEAM, ...load("ha.beam", {}) }));
   const [shear, setSh] = useState<ShearRequest>(() => ({ ...DEFAULT_SHEAR, ...load("ha.shear", {}) }));
   const [column, setCol] = useState<ColumnRequest>(() => ({ ...DEFAULT_COLUMN, ...load("ha.column", {}) }));
+  const [els, setE] = useState<ElsState>(() => ({ ...DEFAULT_ELS, ...load("ha.els", {}) }));
   const [activeProject, setAP] = useState<{ id: string; name: string } | null>(() => load("ha.project", null));
 
   useEffect(() => save("ha.overrides", overrides), [overrides]);
@@ -131,15 +168,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => save("ha.project", activeProject), [activeProject]);
   useEffect(() => save("ha.shear", shear), [shear]);
   useEffect(() => save("ha.column", column), [column]);
+  useEffect(() => save("ha.els", els), [els]);
 
   const setOverrides = useCallback((o: Record<string, unknown>) => setOv(o), []);
   const setBeam = useCallback((b: FlexureRequest) => setB(b), []);
   const setShear = useCallback((x: ShearRequest) => setSh(x), []);
   const setColumn = useCallback((x: ColumnRequest) => setCol(x), []);
+  const setEls = useCallback((x: ElsState) => setE(x), []);
   const setActiveProject = useCallback((p: { id: string; name: string } | null) => setAP(p), []);
 
   return (
-    <Ctx.Provider value={{ overrides, setOverrides, beam, setBeam, shear, setShear, column, setColumn, activeProject, setActiveProject }}>
+    <Ctx.Provider value={{ overrides, setOverrides, beam, setBeam, shear, setShear, column, setColumn, els, setEls, activeProject, setActiveProject }}>
       {children}
     </Ctx.Provider>
   );

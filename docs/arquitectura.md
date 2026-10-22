@@ -15,6 +15,9 @@ frontend/ (React + TS + Vite + Tailwind)  ──HTTP /api──▶  backend/main
                                                            │   ├─ elu/cortante.py  cortante (6.2, 9.2.2)
                                                            │   ├─ elu/nm.py        interacción N–M (6.1)
                                                            │   ├─ elu/pilares.py   pilares (5.2, 5.8, 9.5)
+                                                           │   ├─ els/elastic.py   secciones homogeneizada y fisurada
+                                                           │   ├─ els/fluencia.py  fluencia y retracción (3.1.4, Ap. B)
+                                                           │   ├─ els/fisuracion.py, els/flechas.py
                                                            │   └─ els/           (pendiente)
                                                            └─ services/   informes PDF y proyectos
 ```
@@ -42,6 +45,9 @@ frontend/ (React + TS + Vite + Tailwind)  ──HTTP /api──▶  backend/main
 | POST | /api/informes/vigas/cortante | informe PDF de cortante |
 | POST | /api/pilares | pilar: segundo orden y flexocompresión |
 | POST | /api/informes/pilares | informe PDF de pilar |
+| GET | /api/els/catalogo | clases de exposición (w_max) y sistemas (K) |
+| POST | /api/els/fisuracion, /api/els/deformaciones | ELS |
+| POST | /api/informes/els/fisuracion, /api/informes/els/deformaciones | informes PDF de ELS |
 | GET/POST/PUT/DELETE | /api/proyectos[/{id}], /api/proyectos/importar | proyectos |
 
 Documentación interactiva: http://127.0.0.1:8000/docs

@@ -1,6 +1,7 @@
 import type {
   ColumnRequest,
   ColumnResult,
+  ElsResult,
   FlexureRequest,
   FlexureResult,
   ModuleInfo,
@@ -93,6 +94,11 @@ export const api = {
     pdf("/informes/vigas/cortante", body),
   column: (body: ColumnRequest) => post<ColumnResult>("/pilares", body),
   columnReport: (body: { project_name: string; author: string; request: ColumnRequest }) => pdf("/informes/pilares", body),
+  elsCatalog: () => request<{ exposure_wmax: Record<string, number>; systems: Record<string, { K: number; description: string }> }>("/els/catalogo"),
+  crack: (body: unknown) => post<ElsResult>("/els/fisuracion", body),
+  deflection: (body: unknown) => post<ElsResult>("/els/deformaciones", body),
+  elsReport: (kind: "fisuracion" | "deformaciones", body: { project_name: string; author: string; request: unknown }) =>
+    pdf(`/informes/els/${kind}`, body),
   projects: () => request<ProjectSummary[]>("/proyectos"),
   project: (id: string) => request<Project>(`/proyectos/${id}`),
   createProject: (body: Partial<Project>) => post<Project>("/proyectos", body),

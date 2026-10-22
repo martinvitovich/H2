@@ -153,3 +153,22 @@ def test_column_endpoint_and_report(client):
     assert client.post("/api/pilares", json={**COLUMN, "b": 100, "h": 500}).status_code == 422
     r = client.post("/api/proyectos", json={"name": "P", "elements": [{"type": "pilar", "name": "P-1", "input": COLUMN}]})
     assert r.status_code == 201
+
+
+LAY = [{"face": "inferior", "n": 3, "diameter": 20}, {"face": "superior", "n": 2, "diameter": 12}]
+
+
+def test_els_endpoints_and_reports(client):
+    crack = {"shape": RECT, "layers": LAY, "M_qp_kNm": 100, "exposure": "XC3"}
+    r = client.post("/api/els/fisuracion", json=crack)
+    assert r.status_code == 200, r.text
+    assert r.json()["result"]["w_k"] > 0
+    defl = {"shape": RECT, "layers": LAY, "span": 6000, "M_qp_kNm": 90, "As_req": 800}
+    r = client.post("/api/els/deformaciones", json=defl)
+    assert r.status_code == 200, r.text
+    for path, body in (("fisuracion", crack), ("deformaciones", defl)):
+        r = client.post(f"/api/informes/els/{path}", json={"request": body})
+        assert r.status_code == 200 and r.content[:5] == b"%PDF-"
+    assert client.get("/api/els/catalogo").json()["exposure_wmax"]["XC1"] == 0.4
+    assert client.post("/api/els/fisuracion", json={**crack, "exposure": "XX"}).status_code == 422
+    assert client.post("/api/els/deformaciones", json={**defl, "RH": 30}).status_code == 422

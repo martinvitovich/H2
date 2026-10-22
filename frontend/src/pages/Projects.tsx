@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { ErrorBox, PageHeader } from "../components/ui";
-import { DEFAULT_BEAM, DEFAULT_COLUMN, DEFAULT_SHEAR, useAppState } from "../state/AppState";
+import { DEFAULT_BEAM, DEFAULT_COLUMN, DEFAULT_ELS, DEFAULT_SHEAR, useAppState } from "../state/AppState";
 import type { Project, ProjectSummary } from "../types";
 
 export default function Projects() {
-  const { activeProject, setActiveProject, setBeam, setShear, setColumn, setOverrides } = useAppState();
+  const { activeProject, setActiveProject, setBeam, setShear, setColumn, setEls, setOverrides } = useAppState();
   const [list, setList] = useState<ProjectSummary[]>([]);
   const [current, setCurrent] = useState<Project | null>(null);
   const [name, setName] = useState("");
@@ -194,8 +194,17 @@ export default function Projects() {
                       <div className="text-sm font-medium">
                         {el.name}{" "}
                         <span className="text-xs font-normal text-slate-500">
-                          · {el.type === "viga_flexion" ? "flexión ELU" : el.type === "viga_cortante" ? "cortante ELU" : "pilar"}
-                          {el.type !== "pilar" && ` · ${el.input.mode === "design" ? "dimensionado" : "comprobación"}`}
+                          ·{" "}
+                          {el.type === "viga_flexion"
+                            ? "flexión ELU"
+                            : el.type === "viga_cortante"
+                              ? "cortante ELU"
+                              : el.type === "pilar"
+                                ? "pilar"
+                                : el.type === "els_fisuracion"
+                                  ? "ELS fisuración"
+                                  : "ELS deformaciones"}
+                          {(el.type === "viga_flexion" || el.type === "viga_cortante") && ` · ${el.input.mode === "design" ? "dimensionado" : "comprobación"}`}
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-500">
@@ -203,7 +212,9 @@ export default function Projects() {
                           ? `M_Ed = ${el.input.M_Ed_kNm} kN·m · ${el.input.concrete_class} · ${el.input.steel_grade}`
                           : el.type === "viga_cortante"
                             ? `V_Ed = ${el.input.V_Ed_kN} kN · ${el.input.concrete_class} · cercos ${el.input.stirrup_grade}`
-                            : `N_Ed = ${el.input.N_Ed_kN} kN · M02 = ${el.input.M02_kNm} kN·m · ${el.input.b}×${el.input.h} mm`}
+                            : el.type === "pilar"
+                              ? `N_Ed = ${el.input.N_Ed_kN} kN · M02 = ${el.input.M02_kNm} kN·m · ${el.input.b}×${el.input.h} mm`
+                              : `M_qp = ${el.input.M_qp_kNm} kN·m · ${el.input.concrete_class}`}
                         {el.result?.summary ? ` · ${el.result.summary}` : ""}
                         {el.result?.ok === true && " · cumple"}
                         {el.result?.ok === false && " · NO cumple"}
@@ -219,9 +230,19 @@ export default function Projects() {
                           } else if (el.type === "viga_cortante") {
                             setShear({ ...DEFAULT_SHEAR, ...el.input, shape: { ...DEFAULT_SHEAR.shape, ...el.input.shape } });
                             nav("/vigas?calc=cortante");
-                          } else {
+                          } else if (el.type === "pilar") {
                             setColumn({ ...DEFAULT_COLUMN, ...el.input });
                             nav("/pilares");
+                          } else {
+                            const inp = el.input;
+                            const base = { ...DEFAULT_ELS, ...inp, shape: { ...DEFAULT_ELS.shape, ...inp.shape } };
+                            if (el.type === "els_deformaciones") {
+                              setEls({ ...base, M_qp_defl_kNm: inp.M_qp_kNm, M_qp_kNm: DEFAULT_ELS.M_qp_kNm });
+                              nav("/els?calc=deformaciones");
+                            } else {
+                              setEls(base);
+                              nav("/els");
+                            }
                           }
                         }}
                       >

@@ -19,24 +19,6 @@ export function Slabs() {
   );
 }
 
-export function ELS() {
-  return (
-    <>
-      <PageHeader title="Estados Límite de Servicio (ELS)" subtitle="Fisuración y deformaciones (apartado 7)." />
-      <div className="grid gap-4 md:grid-cols-2">
-        <NotAvailable
-          title="Fisuración (fase 5)"
-          planned={["Abertura característica de fisura w_k (7.3.4).", "Armadura mínima de fisuración (7.3.2).", "Comprobación frente al límite del proyecto."]}
-        />
-        <NotAvailable
-          title="Deformaciones (fase 5)"
-          planned={["Flechas con rigidez fisurada/no fisurada (7.4.3).", "Fluencia y retracción (3.1.4).", "Diferenciación entre estimación simplificada (7.4.2) y cálculo detallado."]}
-        />
-      </div>
-    </>
-  );
-}
-
 export function ELU({ modules }: { modules: ModuleInfo[] }) {
   const st = (id: string) => modules.find((m) => m.id === id)?.status ?? "no_disponible";
   const rows: { id: string; name: string; ref: string; link: string | null }[] = [

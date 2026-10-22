@@ -98,6 +98,25 @@ equivalen a «pág. BOE − 98284».
 | Flexión esviada | 5.8.9 | **No implementado** | — | Limitación declarada |
 | Métodos de rigidez nominal y general | 5.8.7, 5.8.6 | **No implementado** | — | Limitación declarada |
 
+## Matriz de trazabilidad (ELS, v0.5.0)
+
+| Magnitud / regla | Apartado (BOE pág.) | Implementación | Valor oficial | Estado |
+|---|---|---|---|---|
+| Sección no fisurada si σ ≤ f_ct,eff; f_ctm para abertura de fisura | 7.1(2) (98392) | `fisuracion.py` | — | Verificado |
+| Tensiones: σ_c ≤ k1·f_ck (XD, XF, XS, característica); fluencia lineal si σ_c ≤ k2·f_ck (cuasi-perm.); σ_s ≤ k3·f_yk (característica) | 7.2(2), (3), (5) (98392) | checks / aviso | k1 = 0,6; k2 = 0,45; k3 = 0,8 | Verificado |
+| w_max por clase de exposición | 7.3.1(5), tabla 27.2 del CE reproducida (98392-98393) | `WMAX_RC` | 0,4 / 0,3 / 0,2 / 0,1 mm (cuasi-permanente) | Verificado |
+| Armadura mínima de fisuración | 7.3.2(2), (7.1)-(7.2) (98394-98395) | `crack_check` | k_c = 0,4 (flexión, σ_c = 0); k = 1,0–0,65 (h 300–800 mm); σ_s = f_yk | Verificado (rectangular y almas; ala traccionada en T: no implementado) |
+| h_c,ef y A_c,eff | 7.3.2(3), figura A19.7.1 (98395-98396) | `crack_check` | min{2,5(h − d); (h − x)/3; h/2} | Verificado |
+| w_k | 7.3.4, (7.8)-(7.12), (7.14) (98398-98400) | `crack_check` | k_t = 0,4/0,6; k1 = 0,8; k2 = 0,5; k3 = 3,4; k4 = 0,425; α_e = E_s/E_cm; 1,3(h − x) si separación > 5(c + φ/2) | Verificado |
+| Límites de flecha | 7.4.1(4)-(5) (98401) | `deflection_check` | L/250 (total, cuasi-perm.); L/500 (diferida) | Verificado |
+| Relación luz/canto | 7.4.2(2), (7.16.a/b), (7.17), tabla A19.7.4 (98401-98403) | `ld_limit` | K = 1,0 / 1,3 / 1,5 / 1,2 / 0,4; × 0,8 en T con b_f/b_w > 3; × 7/l_eff (8,5/l_eff losas planas) | Verificado |
+| Interpolación entre estados | 7.4.3(3), (7.18)-(7.19) (98403-98404) | `deflection_check` | ζ = 1 − β(M_cr/M)²; β = 1,0 / 0,5 | Verificado |
+| Módulo efectivo | 7.4.3(5), (7.20) (98404) | — | E_c,eff = E_cm/(1 + φ) | Verificado |
+| Curvatura de retracción | 7.4.3(6), (7.21) (98404) | — | 1/r_cs = ε_cs·α_e·S/I | Verificado |
+| Fluencia φ(t, t_0) | 3.1.4(2)-(5); Apéndice B, (B.1)-(B.9) (98309-98310, 98470-98471) | `fluencia.py` | — | Verificado (Apéndice B «métodos recomendados») |
+| Retracción ε_cs | 3.1.4(6), (3.8)-(3.13), tablas A19.3.2-A19.3.3; (B.11)-(B.12) | `fluencia.py` | — | Verificado; (B.11) reproduce los 30 valores de la tabla A19.3.2 (±0,005 ‰) |
+| Esfuerzo axil, pretensado, armado en dos direcciones (7.15), armadura de piel | 7.3 | **No implementado** | — | Limitación declarada |
+
 ## Erratas detectadas en el texto oficial
 
 1. **ε_c2 en la tabla A19.3.1 (pág. 98308).** La columna de relaciones analíticas imprime

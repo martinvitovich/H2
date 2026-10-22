@@ -26,8 +26,11 @@ export default function Reports() {
           ? await api.flexureReport({ project_name, author, request: el.input as FlexureRequest })
           : el.type === "viga_cortante"
             ? await api.shearReport({ project_name, author, request: el.input as ShearRequest })
-            : await api.columnReport({ project_name, author, request: el.input as ColumnRequest });
-      const prefix = el.type === "viga_flexion" ? "informe_" : el.type === "viga_cortante" ? "informe_cortante_" : "informe_pilar_";
+            : el.type === "pilar"
+              ? await api.columnReport({ project_name, author, request: el.input as ColumnRequest })
+              : await api.elsReport(el.type === "els_fisuracion" ? "fisuracion" : "deformaciones", { project_name, author, request: el.input });
+      const prefix =
+        el.type === "viga_flexion" ? "informe_" : el.type === "viga_cortante" ? "informe_cortante_" : el.type === "pilar" ? "informe_pilar_" : `informe_${el.type}_`;
       downloadBlob(blob, `${prefix}${el.input.element_name.replace(/[^A-Za-z0-9_-]+/g, "_")}.pdf`);
     } catch (e) {
       setError((e as Error).message);
@@ -108,7 +111,7 @@ export default function Reports() {
             {busy === "current-column" ? "Generando…" : "Informe de pilar (PDF)"}
           </button>
           <p className="text-[11px] text-slate-500">
-            Para modificar los datos, vaya a{" "}
+            Los informes de ELS se generan desde la página «Estados Límite de Servicio». Para modificar los datos, vaya a{" "}
             <Link className="text-brand underline" to="/vigas">
               Vigas
             </Link>
@@ -138,7 +141,9 @@ export default function Reports() {
                         ? `flexión · M_Ed = ${el.input.M_Ed_kNm} kN·m`
                         : el.type === "viga_cortante"
                           ? `cortante · V_Ed = ${el.input.V_Ed_kN} kN`
-                          : `pilar · N_Ed = ${el.input.N_Ed_kN} kN`}
+                          : el.type === "pilar"
+                            ? `pilar · N_Ed = ${el.input.N_Ed_kN} kN`
+                            : `${el.type === "els_fisuracion" ? "ELS fisuración" : "ELS deformaciones"} · M_qp = ${el.input.M_qp_kNm} kN·m`}
                     </span>
                   </span>
                   <button className="btn-secondary text-xs" disabled={busy !== null} onClick={() => generate({ type: el.type, input: { ...el.input, parameter_overrides: project.parameter_overrides } } as ProjectElement, el.id ?? String(i))}>

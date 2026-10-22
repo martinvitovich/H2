@@ -107,3 +107,20 @@ la envolvente es despreciable y del lado de la seguridad (subconjunto de planos 
 ## D19 — Segundo orden solo si hay datos suficientes
 Si λ > λ_lim y falta φ_ef, o la armadura no es simétrica (requisito de 5.8.8.3(1)), la
 verificación de flexocompresión queda «no evaluable» y no se declara conforme.
+
+## D20 — Tensión del acero para w_k
+Se toma σ_s en la capa de armadura más traccionada (no en el centro de gravedad del grupo): del lado de la
+seguridad cuando hay varias capas.
+
+## D21 — Flecha a partir de la curvatura de la sección crítica
+Siguiendo 7.4.3(7) se calcula la deformación suponiendo el elemento sin fisurar y totalmente fisurado y se
+interpola con (7.18). La flecha se obtiene de la curvatura en la sección de momento máximo con los
+coeficientes de forma de resistencia de materiales: biapoyada con carga uniforme 5/48 (carga) y 1/8
+(retracción, curvatura constante); voladizo 1/4 y 1/2. Para otros sistemas el usuario introduce k_M y k_cs.
+
+## D22 — Flecha diferida
+Se aproxima como δ_tot(largo plazo, φ, ε_cs, β = 0,5) − δ_inst(E_cm, β = 1,0). No se modela la secuencia de
+construcción ni el instante de colocación de tabiques.
+
+## D23 — Método simplificado en secciones en T
+ρ = A_s,req/(b_w·d) (del lado de la seguridad); corrección × 0,8 si b_f/b_w > 3 (7.4.2(2)).

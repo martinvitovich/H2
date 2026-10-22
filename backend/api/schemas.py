@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field, model_validator
 
 from core.elu.cortante import ShearInput
 from core.elu.pilares import ColumnInput
+from core.els.fisuracion import CrackInput
+from core.els.flechas import DeflectionInput
 from core.elu.flexion import FlexureInput
 from core.parameters import ParameterSet
 from core.section import Layer, RectangularShape, ReinforcedSection, TShape
@@ -176,6 +178,73 @@ class ColumnReportRequest(BaseModel):
     project_name: str = Field("Proyecto sin título", max_length=200)
     author: str = Field("", max_length=200)
     request: ColumnRequest
+
+
+class CrackRequest(BaseModel):
+    element_name: str = Field("Viga", max_length=120)
+    shape: ShapeIn
+    cover: float = Field(30, gt=0, le=200)
+    stirrup_diameter: float = Field(8, ge=0, le=20)
+    dg: float = Field(20, ge=4, le=63)
+    layers: list[LayerIn] = Field(default_factory=list)
+    M_qp_kNm: float = Field(..., ge=-1e5, le=1e5, description="Momento cuasi-permanente (kN·m)")
+    M_char_kNm: float | None = Field(None, ge=-1e5, le=1e5, description="Momento característico (kN·m), opcional")
+    exposure: str = "XC1"
+    w_max: float | None = Field(None, gt=0, le=1)
+    long_term: bool = True
+    concrete_class: str = "C25/30"
+    steel_grade: str = "B500S"
+    parameter_overrides: dict[str, Any] = Field(default_factory=dict)
+
+    def build(self) -> CrackInput:
+        return CrackInput(shape=self.shape.build(), cover=self.cover, stirrup_diameter=self.stirrup_diameter,
+                          layers=[l.build() for l in self.layers], M_qp_knm=self.M_qp_kNm, exposure=self.exposure,
+                          M_char_knm=self.M_char_kNm, w_max=self.w_max, long_term=self.long_term,
+                          concrete_class=self.concrete_class, steel_grade=self.steel_grade, dg=self.dg,
+                          params=ParameterSet(self.parameter_overrides), element_name=self.element_name)
+
+
+class DeflectionRequest(BaseModel):
+    element_name: str = Field("Viga", max_length=120)
+    shape: ShapeIn
+    cover: float = Field(30, gt=0, le=200)
+    stirrup_diameter: float = Field(8, ge=0, le=20)
+    dg: float = Field(20, ge=4, le=63)
+    layers: list[LayerIn] = Field(default_factory=list)
+    span: float = Field(..., gt=0, le=1e5, description="Luz (mm)")
+    system: Literal["biapoyada", "continua_extremo", "continua_interior", "losa_plana", "voladizo"] = "biapoyada"
+    M_qp_kNm: float = Field(0, ge=-1e5, le=1e5)
+    RH: float = Field(60, ge=40, le=100)
+    t0: float = Field(28, gt=0, le=10000)
+    cement: Literal["S", "N", "R"] = "N"
+    perimeter: float | None = Field(None, gt=0)
+    phi_override: float | None = Field(None, ge=0, le=10)
+    eps_cs_override: float | None = Field(None, ge=0, le=2, description="‰")
+    camber: float = Field(0, ge=0)
+    kM: float | None = Field(None, gt=0, le=1)
+    kcs: float | None = Field(None, gt=0, le=1)
+    As_req: float | None = Field(None, gt=0)
+    As2_req: float = Field(0, ge=0)
+    fragile_partitions: bool = False
+    concrete_class: str = "C25/30"
+    steel_grade: str = "B500S"
+    parameter_overrides: dict[str, Any] = Field(default_factory=dict)
+
+    def build(self) -> DeflectionInput:
+        return DeflectionInput(shape=self.shape.build(), cover=self.cover, stirrup_diameter=self.stirrup_diameter,
+                               layers=[l.build() for l in self.layers], span=self.span, system=self.system,
+                               M_qp_knm=self.M_qp_kNm, RH=self.RH, t0=self.t0, cement=self.cement,
+                               perimeter=self.perimeter, phi_override=self.phi_override,
+                               eps_cs_override=self.eps_cs_override, camber=self.camber, kM=self.kM, kcs=self.kcs,
+                               As_req=self.As_req, As2_req=self.As2_req, fragile_partitions=self.fragile_partitions,
+                               concrete_class=self.concrete_class, steel_grade=self.steel_grade, dg=self.dg,
+                               params=ParameterSet(self.parameter_overrides), element_name=self.element_name)
+
+
+class ElsReportRequest(BaseModel):
+    project_name: str = Field("Proyecto sin título", max_length=200)
+    author: str = Field("", max_length=200)
+    request: dict[str, Any]
 
 
 class MaterialRequest(BaseModel):

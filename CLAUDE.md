@@ -60,7 +60,7 @@ npm run build      # compila frontend
 npm run start      # compila y sirve todo desde FastAPI (:8000)
 ```
 
-## Estado real de los módulos (v0.4.0)
+## Estado real de los módulos (v0.5.0)
 | Módulo | Estado |
 |---|---|
 | Parámetros normativos | Cotejados con el texto oficial (BOE); pendiente solo la ductilidad de aceros (Arts. 34-35 CE) |
@@ -70,7 +70,9 @@ npm run start      # compila y sirve todo desde FastAPI (:8000)
 | Vigas — cortante ELU (V_Rd,c, cercos 45°–90°, bielas, 9.2.2) | Implementado y cotejado · falta contraste bibliográfico |
 | Proyectos (JSON v1, elementos viga_flexion y viga_cortante) e informes PDF | Implementado |
 | Pilares — flexocompresión recta (N–M 6.1, 5.2, 5.8.3, curvatura nominal 5.8.8, 9.5) | Implementado y cotejado · falta contraste bibliográfico |
-| Losas, ELS fisuración y deformaciones | No disponible |
+| ELS — fisuración y tensiones (7.2, 7.3) | Implementado y cotejado · falta contraste bibliográfico |
+| ELS — deformaciones (7.4, 3.1.4, Apéndice B) | Implementado y cotejado · falta contraste bibliográfico |
+| Losas | No disponible |
 
 ## Pendiente
 - Contraste con ejemplos resueltos de bibliografía verificable (para pasar a «verificado»).
@@ -79,10 +81,11 @@ npm run start      # compila y sirve todo desde FastAPI (:8000)
   barras levantadas, comprobación de la armadura longitudinal con ΔF_td.
 - Pilares: flexión esviada (5.8.9), rigidez nominal (5.8.7), método general (5.8.6), secciones
   circulares, cortante en pilares, coeficiente de fluencia (3.1.4).
-- Fase 5: fisuración (7.3) y flechas (7.4).
+- ELS: esfuerzo axil, pretensado, armado en dos direcciones, alas traccionadas (7.3), armadura de piel;
+  flechas en vigas continuas con ley de momentos real (integración de curvaturas).
 - Fase 6: consolidación.
 - Dimensionado de secciones en T; armadura de montaje/piel; flexión compuesta.
 - Recubrimientos por durabilidad (4.4.1) y anchura eficaz (5.3.2.1).
 
 ## Decisiones
-Ver `docs/decisiones.md` (D1–D19).
+Ver `docs/decisiones.md` (D1–D23).
