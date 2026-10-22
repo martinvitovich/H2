@@ -1,0 +1,18 @@
+{
+  "element_name": "V-ejemplo-2",
+  "mode": "check",
+  "shape": {"kind": "T", "bf": 800, "hf": 120, "bw": 300, "h": 600},
+  "cover": 30,
+  "stirrup_diameter": 8,
+  "dg": 20,
+  "concrete_class": "C30/37",
+  "steel_grade": "B500S",
+  "steel_branch": "horizontal",
+  "situation": "persistente",
+  "M_Ed_kNm": 350,
+  "layers": [
+    {"face": "inferior", "n": 4, "diameter": 20},
+    {"face": "inferior", "n": 2, "diameter": 20},
+    {"face": "superior", "n": 2, "diameter": 12}
+  ]
+}

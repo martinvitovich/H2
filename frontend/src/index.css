@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #16202c;
+  --color-brand: #1f3a5f;
+  --color-brand-dark: #16304f;
+  --color-brand-soft: #e8eef5;
+  --color-accent: #c8892a;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+html, body, #root { height: 100%; }
+body { background: var(--color-slate-50); color: var(--color-ink); -webkit-font-smoothing: antialiased; }
+
+@layer components {
+  .card { @apply rounded-lg border border-slate-200 bg-white p-4 shadow-sm; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-ink transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50; }
+  .input { @apply w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm tabular-nums focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none; }
+  .label { @apply mb-1 block text-xs font-medium text-slate-600; }
+  .h2 { @apply text-base font-semibold text-ink; }
+}
