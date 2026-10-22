@@ -14,11 +14,12 @@
      coherencia entre bloque rectangular y parábola-rectángulo (diferencia < 1 %).
    - Equilibrio de las soluciones del dimensionado (simple y doble armadura).
    - Casos límite y entradas inválidas (geometría, materiales, parámetros, API).
-2. **Contraste con la tabla 3.1** — los valores redondeados de la tabla 3.1 de la
-   EN 1992-1-1 se reproducen con tolerancia de medio dígito. Su transcripción **no** se
-   ha cotejado con el Anejo 19 oficial (pendiente).
-3. **Validación normativa independiente (PENDIENTE)** — requiere:
-   - cotejo de cada fila de `docs/normativa.md` con el texto oficial;
+2. **Cotejo con el texto oficial (completado para flexión, v0.2.0)** — cada fila de
+   `docs/normativa.md` se ha contrastado con el Anejo 19 publicado en el BOE. Los valores de la
+   tabla A19.3.1 se reproducen con tolerancia de medio dígito (test parametrizado con las 14
+   clases), y se comprueba la errata de ε_c2. La cuantía mínima se contrasta con un cálculo
+   manual de la expresión (9.1).
+3. **Validación independiente (PENDIENTE)** — requiere:
    - contraste con ejemplos resueltos de bibliografía técnica verificable (no
      disponibles en el entorno de desarrollo: no se han inventado valores de referencia);
    - revisión por un ingeniero estructural.

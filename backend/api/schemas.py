@@ -72,6 +72,8 @@ class FlexureRequest(BaseModel):
     assumed_bar_diameter: float = Field(16, ge=5, le=40)
     layers: list[LayerIn] = Field(default_factory=list)
     parameter_overrides: dict[str, Any] = Field(default_factory=dict)
+    secondary_element: bool = Field(False, description="Alternativa A_s,min = 1,2·A_s,nec de 9.2.1.1(1)")
+    stirrup_spacing: float | None = Field(None, gt=0, le=1000, description="Separación de estribos (mm), 9.2.1.2(3)")
 
     def build(self) -> FlexureInput:
         return FlexureInput(
@@ -80,11 +82,13 @@ class FlexureRequest(BaseModel):
             steel_branch=self.steel_branch, situation=self.situation, dg=self.dg,
             assumed_bar_diameter=self.assumed_bar_diameter, layers=[l.build() for l in self.layers],
             params=ParameterSet(self.parameter_overrides), element_name=self.element_name,
+            secondary_element=self.secondary_element, stirrup_spacing=self.stirrup_spacing,
         )
 
 
 class MaterialRequest(BaseModel):
     concrete_class: str = "C25/30"
+    aggregate: Literal["cuarcitico", "calizo", "arenisca", "basaltico"] = "cuarcitico"
     steel_grade: str = "B500S"
     steel_branch: Literal["horizontal", "inclinada"] = "horizontal"
     situation: Literal["persistente", "transitoria", "accidental"] = "persistente"

@@ -22,6 +22,8 @@ export const DEFAULT_BEAM: FlexureRequest = {
     { face: "superior", n: 2, diameter: 12 },
   ],
   parameter_overrides: {},
+  secondary_element: false,
+  stirrup_spacing: 150,
 };
 
 interface AppState {

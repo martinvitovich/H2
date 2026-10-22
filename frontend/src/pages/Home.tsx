@@ -55,8 +55,9 @@ export default function Home({ info }: { info: AppInfo | null }) {
             {!info && <p className="text-sm text-slate-500">Cargando estado de los módulos…</p>}
           </div>
           <p className="mt-3 text-xs text-slate-500">
-            «Validación pendiente» significa que el método está implementado y superado por pruebas matemáticas
-            internas, pero sus parámetros no se han cotejado todavía con el texto oficial del Anejo 19.
+            «Validación pendiente» significa que el método está implementado, superado por pruebas matemáticas
+            internas y cotejado con el texto oficial del Anejo 19, pero falta su contraste con ejemplos resueltos
+            de bibliografía independiente.
           </p>
         </section>
 

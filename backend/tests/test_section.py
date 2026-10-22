@@ -94,3 +94,18 @@ def test_t_section_bars_inside_web():
     sec = ReinforcedSection(shape, 30, 8, [Layer("inferior", 3, 20)])
     x0 = (800 - 300) / 2
     assert all(x0 < b.x < x0 + 300 for b in sec.bars)
+
+
+def test_stacked_layers_aligned_8_2_3():
+    sec = ReinforcedSection(RectangularShape(300, 600), 30, 8,
+                            [Layer("inferior", 4, 20), Layer("inferior", 3, 20)])
+    first = sorted(b.x for b in sec.bars if b.layer == 1)
+    second = sorted(b.x for b in sec.bars if b.layer == 2)
+    assert all(any(abs(x - f) < 1e-9 for f in first) for x in second)
+    assert not sec.issues
+
+
+def test_stacked_layer_with_more_bars_reports_8_2_3():
+    sec = ReinforcedSection(RectangularShape(400, 600), 30, 8,
+                            [Layer("inferior", 3, 16), Layer("inferior", 4, 16)])
+    assert any("8.2(3)" in i for i in sec.issues)

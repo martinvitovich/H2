@@ -24,10 +24,38 @@ def test_ductility_limit_default():
     assert ductility_limit(c, p) == pytest.approx((1 - 0.54) / k4)
 
 
-def test_as_min_manual():
+def test_as_min_9_1_rectangular_manual():
+    """(9.1): A_s,min = (W/z)·f_ctm,fl/f_yd, z = 0,8h, f_ctm,fl = max{(1,6 − h/1000)f_ctm; f_ctm}."""
     c, s = Concrete(25), ReinforcingSteel.from_grade("B500S")
-    v = as_min(c, s, 300, 450, ParameterSet())
-    assert v == pytest.approx(max(0.26 * 0.3 * 25 ** (2 / 3) / 500 * 300 * 450, 0.0013 * 300 * 450))
+    b, h = 300.0, 500.0
+    W = b * h ** 2 / 6
+    fctm_fl = (1.6 - 0.5) * 0.30 * 25 ** (2 / 3)
+    expected = W / (0.8 * h) * fctm_fl / (500 / 1.15)
+    v = as_min(c, s, RectangularShape(b, h), 1, ParameterSet())
+    assert v == pytest.approx(expected, rel=1e-12)
+    assert v == pytest.approx(202.8, abs=0.1)  # valor numérico del cálculo manual
+    # simétrica: igual para momento negativo
+    assert as_min(c, s, RectangularShape(b, h), -1, ParameterSet()) == pytest.approx(v)
+
+
+def test_as_min_9_1_t_section_depends_on_sign():
+    c, s = Concrete(25), ReinforcingSteel.from_grade("B500S")
+    t = TShape(800, 120, 300, 600)
+    yg, I = t.centroid_y, t.inertia
+    fctm_fl = 1.0 * c.fctm  # h = 600 mm → 1,6 − 0,6 = 1,0
+    pos = I / (600 - yg) / (0.8 * 600) * fctm_fl / s.fyd
+    neg = I / yg / (0.8 * 600) * fctm_fl / s.fyd
+    assert as_min(c, s, t, 1, ParameterSet()) == pytest.approx(pos)
+    assert as_min(c, s, t, -1, ParameterSet()) == pytest.approx(neg)
+    assert neg > pos  # el ala traccionada exige más armadura mínima
+
+
+def test_as_min_secondary_element():
+    c, s = Concrete(25), ReinforcingSteel.from_grade("B500S")
+    assert as_min(c, s, RectangularShape(300, 500), 1, ParameterSet(), secondary=True, As_req=500) == \
+        pytest.approx(600)
+    with pytest.raises(FlexureInputError):
+        as_min(c, s, RectangularShape(300, 500), 1, ParameterSet(), secondary=True)
 
 
 def test_block_design_single_equilibrium():
@@ -62,7 +90,7 @@ def test_design_result_verified_by_general_method():
 
 @pytest.mark.parametrize("M", [60, 150, 250, 350, 450, -180])
 def test_design_proposals_satisfy_all_checks(M):
-    r = design_flexure(FlexureInput(RectangularShape(300, 500), 30, 8, M))
+    r = design_flexure(FlexureInput(RectangularShape(300, 500), 30, 8, M, stirrup_spacing=150))
     assert r["proposal"] is not None
     assert r["ok"] is True
     assert abs(r["verification"]["M_Rd"]) / 1e6 >= abs(M)
@@ -131,3 +159,23 @@ def test_parameter_override_changes_result():
     assert mod["verification"]["M_Rd"] > base["verification"]["M_Rd"]
     used = {p["key"]: p for p in mod["trace"]["parameters_used"]}
     assert used["gamma_s_persistente"]["status"] == "definido_por_usuario"
+
+
+def test_compression_bar_tie_check_9_2_1_2():
+    layers = [Layer("inferior", 4, 16), Layer("superior", 2, 12)]
+    base = dict(shape=RectangularShape(300, 500), cover=30, stirrup_diameter=8, M_Ed_knm=120, layers=layers)
+    get = lambda r: next(c for c in r["trace"]["checks"] if c["reference"].startswith("Anejo 19, 9.2.1.2(3)"))
+    r = check_flexure(FlexureInput(**base))
+    assert get(r)["ok"] is None and r["ok"] is None          # falta el dato: no se declara conforme
+    assert get(check_flexure(FlexureInput(**base, stirrup_spacing=180)))["ok"] is True   # 15·12 = 180
+    assert get(check_flexure(FlexureInput(**base, stirrup_spacing=200)))["ok"] is False
+    nost = dict(base, stirrup_diameter=0)
+    assert get(check_flexure(FlexureInput(**nost, stirrup_spacing=100)))["ok"] is False
+
+
+def test_secondary_element_in_design_and_check():
+    r = design_flexure(FlexureInput(RectangularShape(300, 500), 30, 8, 150, secondary_element=True))
+    assert r["design"]["As_min"] == pytest.approx(1.2 * r["design"]["As1"])
+    rc = check_flexure(FlexureInput(TShape(800, 120, 300, 600), 30, 8, 200, secondary_element=True,
+                                    layers=[Layer("inferior", 3, 20)]))
+    assert any("expresión (9.1)" in w for w in rc["trace"]["warnings"])

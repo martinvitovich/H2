@@ -6,13 +6,14 @@ Ningún otro módulo del motor debe contener constantes normativas propias.
 
 Estado de verificación (``VerificationStatus``):
 
-* ``CONFIRMADO_FUENTE_SECUNDARIA``: valor contrastado con un extracto del texto
-  oficial obtenido por una vía indirecta (no se pudo descargar el PDF oficial
-  desde el entorno de desarrollo; ver docs/normativa.md).
-* ``PENDIENTE_VERIFICACION``: valor tomado de la estructura del Anejo 19, que
-  transpone la EN 1992-1-1, pero que NO ha podido contrastarse con el texto
-  oficial del Anejo 19. Debe revisarse antes de dar el módulo por validado.
+* ``VERIFICADO_TEXTO_OFICIAL``: valor cotejado con el texto oficial del Anejo 19
+  publicado en el BOE n.º 190 de 10/08/2021 (BOE-A-2021-13681). La página del BOE
+  se indica en la referencia.
+* ``CONFIRMADO_FUENTE_SECUNDARIA``: valor contrastado solo con un extracto indirecto.
+* ``PENDIENTE_VERIFICACION``: valor no contrastado con el texto oficial (p. ej.,
+  porque el Anejo remite a otra disposición no consultada) o criterio no normativo.
 * ``DEFINIDO_POR_USUARIO``: el usuario ha sobrescrito el valor por defecto.
+* ``NO_NORMATIVO``: criterio propio del programa (no procede del Anejo).
 """
 
 from __future__ import annotations
@@ -32,9 +33,11 @@ NORM_SHORT = "Código Estructural, Anejo 19"
 
 
 class VerificationStatus(str, Enum):
+    VERIFICADO_TEXTO_OFICIAL = "verificado_texto_oficial"
     CONFIRMADO_FUENTE_SECUNDARIA = "confirmado_fuente_secundaria"
     PENDIENTE_VERIFICACION = "pendiente_verificacion"
     DEFINIDO_POR_USUARIO = "definido_por_usuario"
+    NO_NORMATIVO = "no_normativo"
 
 
 @dataclass
@@ -61,62 +64,72 @@ class ParameterError(ValueError):
 
 
 _P = VerificationStatus.PENDIENTE_VERIFICACION
-_C = VerificationStatus.CONFIRMADO_FUENTE_SECUNDARIA
+_V = VerificationStatus.VERIFICADO_TEXTO_OFICIAL
+
+# Factores de E_cm según el tipo de árido, Anejo 19, 3.1.3(2) (BOE pág. 98307):
+# los valores de la tabla A19.3.1 corresponden a áridos cuarcíticos; se reducen un 10 %
+# con áridos calizos, un 30 % con arenisca y se incrementan un 20 % con áridos basálticos.
+AGGREGATE_ECM_FACTORS: dict[str, float] = {
+    "cuarcitico": 1.0, "calizo": 0.9, "arenisca": 0.7, "basaltico": 1.2,
+}
+AGGREGATE_REFERENCE = "Anejo 19, 3.1.3(2) (BOE pág. 98307)"
 
 
 def _defaults() -> list[Parameter]:
     return [
-        # --- Coeficientes parciales de los materiales (2.4.2.4, tabla 2.1) ---
+        # --- Coeficientes parciales de los materiales (2.4.2.4, tabla A19.2.1) ---
         Parameter(
             "gamma_c_persistente", "γ_c", 1.5, "-",
-            "Coeficiente parcial del hormigón, situación persistente o transitoria",
-            "Anejo 19, 2.4.2.4(1), tabla 2.1", _C, min_value=1.0, max_value=2.0,
+            "Coeficiente parcial del hormigón, situación permanente o transitoria",
+            "Anejo 19, 2.4.2.4(1), tabla A19.2.1 (BOE pág. 98304)", _V, min_value=1.0, max_value=2.0,
+            note="Pueden usarse valores menores si se justifica la reducción de la incertidumbre "
+            "(2.4.2.4(3) y Apéndice A).",
         ),
         Parameter(
             "gamma_c_accidental", "γ_c", 1.3, "-",
             "Coeficiente parcial del hormigón, situación accidental",
-            "Anejo 19, 2.4.2.4(1), tabla 2.1", _C, min_value=1.0, max_value=2.0,
+            "Anejo 19, 2.4.2.4(1), tabla A19.2.1 (BOE pág. 98304)", _V, min_value=1.0, max_value=2.0,
         ),
         Parameter(
             "gamma_s_persistente", "γ_s", 1.15, "-",
-            "Coeficiente parcial del acero de armar, situación persistente o transitoria",
-            "Anejo 19, 2.4.2.4(1), tabla 2.1", _C, min_value=1.0, max_value=1.5,
+            "Coeficiente parcial del acero de armaduras pasivas, situación permanente o transitoria",
+            "Anejo 19, 2.4.2.4(1), tabla A19.2.1 (BOE pág. 98304)", _V, min_value=1.0, max_value=1.5,
+            note="Puede reducirse hasta 1,10 si se cumplen al menos dos de las condiciones de 2.4.2.6.",
         ),
         Parameter(
             "gamma_s_accidental", "γ_s", 1.0, "-",
-            "Coeficiente parcial del acero de armar, situación accidental",
-            "Anejo 19, 2.4.2.4(1), tabla 2.1", _C, min_value=1.0, max_value=1.5,
+            "Coeficiente parcial del acero de armaduras pasivas, situación accidental",
+            "Anejo 19, 2.4.2.4(1), tabla A19.2.1 (BOE pág. 98304)", _V, min_value=1.0, max_value=1.5,
         ),
         # --- Resistencias de cálculo del hormigón (3.1.6) ---
         Parameter(
             "alpha_cc", "α_cc", 1.0, "-",
             "Coeficiente de efectos a largo plazo y de la forma de aplicación de la carga "
             "sobre la resistencia a compresión",
-            "Anejo 19, 3.1.6(1)", _P,
-            note="La EN 1992-1-1 deja este valor a determinación nacional (recomendado 1,0). "
-            "Confirmar el valor adoptado en el Anejo 19.",
-            min_value=0.8, max_value=1.0,
+            "Anejo 19, 3.1.6(1), expresión (3.15) (BOE pág. 98313)", _V,
+            note="Con carácter general α_cc = 1,00. Si la carga permanente supera el 80 % de la "
+            "carga total, el autor del proyecto puede adoptar un valor entre 0,85 y 1,0.",
+            min_value=0.85, max_value=1.0,
         ),
         Parameter(
             "alpha_ct", "α_ct", 1.0, "-",
             "Coeficiente de efectos a largo plazo sobre la resistencia a tracción",
-            "Anejo 19, 3.1.6(2)", _P,
-            note="Determinación nacional en la EN 1992-1-1 (recomendado 1,0). Confirmar.",
-            min_value=0.8, max_value=1.0,
+            "Anejo 19, 3.1.6(2), expresión (3.16) (BOE pág. 98313)", _V,
+            note="El Anejo fija α_ct = 1,00.",
+            min_value=1.0, max_value=1.0,
         ),
         # --- Acero de armar (3.2.7) ---
         Parameter(
             "Es", "E_s", 200000.0, "MPa",
-            "Módulo de elasticidad de cálculo del acero de armar",
-            "Anejo 19, 3.2.7(4)", _P, min_value=150000.0, max_value=220000.0,
+            "Módulo de elasticidad de cálculo del acero de armaduras pasivas",
+            "Anejo 19, 3.2.7(4) (BOE pág. 98319)", _V, min_value=150000.0, max_value=220000.0,
         ),
         Parameter(
             "eps_ud_factor", "ε_ud/ε_uk", 0.9, "-",
-            "Relación entre la deformación de cálculo y la característica bajo carga "
-            "máxima (solo para el diagrama con rama superior inclinada)",
-            "Anejo 19, 3.2.7(2), nota", _P,
-            note="Valor recomendado en la EN 1992-1-1. Solo interviene si se elige la rama "
-            "inclinada; con la rama horizontal no es necesario limitar la deformación.",
+            "Relación entre la deformación límite de cálculo y la deformación bajo carga máxima "
+            "(solo para el diagrama con rama superior inclinada)",
+            "Anejo 19, 3.2.7(2) a) (BOE pág. 98319)", _V,
+            note="Con la rama horizontal (3.2.7(2) b) no es necesario comprobar el límite de deformación.",
             min_value=0.5, max_value=1.0,
         ),
         # --- Criterio de ductilidad (5.5(4)) ---
@@ -124,43 +137,53 @@ def _defaults() -> list[Parameter]:
             "delta_redistribucion", "δ", 1.0, "-",
             "Relación entre el momento redistribuido y el momento elástico (δ = 1: sin "
             "redistribución)",
-            "Anejo 19, 5.5(4)", _P, min_value=0.7, max_value=1.0,
+            "Anejo 19, 5.5(4) (BOE págs. 98335-98336)", _V,
+            note="Con redistribución, δ ≥ k5 = 0,7 para armaduras tipo S o SD y δ ≥ k6 = 0,8 para "
+            "tipo T (5.5(4)).",
+            min_value=0.7, max_value=1.0,
         ),
         Parameter("k1_redist", "k_1", 0.44, "-", "Coeficiente k1 de la expresión (5.10a)",
-                  "Anejo 19, 5.5(4)", _P, min_value=0.0, max_value=1.0),
+                  "Anejo 19, 5.5(4) (BOE pág. 98336)", _V, min_value=0.0, max_value=1.0),
         Parameter("k2_redist_base", "k_2", 1.25, "-",
                   "Factor de k2 = 1,25·(0,6 + 0,0014/ε_cu2) de la expresión (5.10a)",
-                  "Anejo 19, 5.5(4)", _P, min_value=0.0, max_value=5.0),
+                  "Anejo 19, 5.5(4) (BOE pág. 98336)", _V, min_value=0.0, max_value=5.0),
         Parameter("k3_redist", "k_3", 0.54, "-", "Coeficiente k3 de la expresión (5.10b)",
-                  "Anejo 19, 5.5(4)", _P, min_value=0.0, max_value=1.0),
+                  "Anejo 19, 5.5(4) (BOE pág. 98336)", _V, min_value=0.0, max_value=1.0),
         Parameter("k4_redist_base", "k_4", 1.25, "-",
                   "Factor de k4 = 1,25·(0,6 + 0,0014/ε_cu2) de la expresión (5.10b)",
-                  "Anejo 19, 5.5(4)", _P, min_value=0.0, max_value=5.0),
-        # --- Armaduras mínimas y máximas en vigas (9.2.1.1) ---
-        Parameter("As_min_coef_fct", "-", 0.26, "-",
-                  "Coeficiente de A_s,min = 0,26·(f_ctm/f_yk)·b_t·d",
-                  "Anejo 19, 9.2.1.1(1), expresión (9.1N)", _P, min_value=0.0, max_value=1.0),
-        Parameter("As_min_coef_geom", "-", 0.0013, "-",
-                  "Cuantía mínima absoluta A_s,min ≥ 0,0013·b_t·d",
-                  "Anejo 19, 9.2.1.1(1), expresión (9.1N)", _P, min_value=0.0, max_value=0.01),
+                  "Anejo 19, 5.5(4) (BOE pág. 98336)", _V, min_value=0.0, max_value=5.0),
+        # --- Armaduras mínima y máxima en vigas (9.2.1.1) ---
+        Parameter("z_factor_asmin", "z/h", 0.8, "-",
+                  "Brazo mecánico aproximado para la armadura mínima: z = 0,8·h",
+                  "Anejo 19, 9.2.1.1(1), expresión (9.1) (BOE pág. 98424)", _V,
+                  note="El Anejo indica que z «puede calcularse de forma aproximada como z = 0,8h».",
+                  min_value=0.5, max_value=1.0),
+        Parameter("As_min_secondary_factor", "-", 1.2, "-",
+                  "Alternativa para elementos secundarios con riesgo de rotura frágil admisible: "
+                  "A_s,min = 1,2·A_s,nec (ELU)",
+                  "Anejo 19, 9.2.1.1(1) (BOE pág. 98424)", _V, min_value=1.0, max_value=2.0),
         Parameter("As_max_coef", "-", 0.04, "-",
-                  "Cuantía máxima de armadura de tracción o compresión, A_s,max = 0,04·A_c "
+                  "Cuantía máxima de armadura de tracción o de compresión, A_s,max = 0,04·A_c "
                   "(fuera de zonas de solape)",
-                  "Anejo 19, 9.2.1.1(3)", _P, min_value=0.0, max_value=0.1),
+                  "Anejo 19, 9.2.1.1(3) (BOE pág. 98424)", _V, min_value=0.0, max_value=0.1),
+        Parameter("compression_bar_tie_factor", "-", 15.0, "-",
+                  "Separación máxima de la armadura transversal que sujeta las barras comprimidas "
+                  "consideradas en el cálculo: s_t ≤ 15·φ",
+                  "Anejo 19, 9.2.1.2(3) (BOE pág. 98425)", _V, min_value=1.0, max_value=30.0),
         # --- Separación de barras (8.2) ---
         Parameter("spacing_k1", "k_1", 1.0, "-",
-                  "Separación libre mínima: k1·φ", "Anejo 19, 8.2(2)", _P,
+                  "Separación libre mínima: k1·φ", "Anejo 19, 8.2(2) (BOE pág. 98405)", _V,
                   min_value=0.5, max_value=3.0),
         Parameter("spacing_k2", "k_2", 5.0, "mm",
-                  "Separación libre mínima: d_g + k2", "Anejo 19, 8.2(2)", _P,
+                  "Separación libre mínima: d_g + k2", "Anejo 19, 8.2(2) (BOE pág. 98405)", _V,
                   min_value=0.0, max_value=30.0),
         Parameter("spacing_abs_min", "-", 20.0, "mm",
-                  "Separación libre mínima absoluta", "Anejo 19, 8.2(2)", _P,
+                  "Separación libre mínima absoluta", "Anejo 19, 8.2(2) (BOE pág. 98405)", _V,
                   min_value=0.0, max_value=50.0),
         # --- Criterios de propuesta de armado (no normativos) ---
         Parameter("bar_diameters", "φ", [10, 12, 16, 20, 25, 32], "mm",
                   "Diámetros comerciales considerados en la propuesta de armado",
-                  "Criterio del programa (no normativo)", _P,
+                  "Criterio del programa (no normativo)", VerificationStatus.NO_NORMATIVO,
                   note="Lista editable. No es un parámetro normativo."),
     ]
 

@@ -5,7 +5,7 @@ Formato de almacenamiento (``format_version`` = 1)::
     {
       "format": "ha-anejo19-project",
       "format_version": 1,
-      "software_version": "0.1.0",
+      "software_version": "0.2.0",
       "id": "<uuid>",
       "name": "...", "description": "...",
       "created": "<ISO 8601>", "modified": "<ISO 8601>",

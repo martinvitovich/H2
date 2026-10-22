@@ -41,7 +41,7 @@ function Row({ k, v, ref_ }: { k: string; v: string; ref_?: string }) {
 export default function Materials() {
   const { overrides } = useAppState();
   const [cat, setCat] = useState<{ concrete_classes: string[]; steel_grades: string[] }>({ concrete_classes: [], steel_grades: [] });
-  const [sel, setSel] = useState({ concrete_class: "C25/30", steel_grade: "B500S", steel_branch: "horizontal", situation: "persistente" });
+  const [sel, setSel] = useState({ concrete_class: "C25/30", aggregate: "cuarcitico", steel_grade: "B500S", steel_branch: "horizontal", situation: "persistente" });
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,11 +62,22 @@ export default function Materials() {
   const s = data?.steel;
   return (
     <>
-      <PageHeader title="Materiales" subtitle="Propiedades del hormigón (tabla 3.1, 3.1.6, 3.1.7) y del acero para armaduras pasivas (3.2.7), calculadas en el servidor con los parámetros normativos activos.">
+      <PageHeader title="Materiales" subtitle="Propiedades del hormigón (tabla A19.3.1, 3.1.3, 3.1.6, 3.1.7, 3.1.8) y del acero para armaduras pasivas (3.2.7), calculadas en el servidor con los parámetros normativos activos.">
         <StatusBadge status="pendiente_validacion" />
       </PageHeader>
-      <div className="card mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="card mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         <SelectField label="Hormigón" value={sel.concrete_class} options={cat.concrete_classes.map((x) => ({ value: x, label: x }))} onChange={(v) => setSel({ ...sel, concrete_class: v })} />
+        <SelectField
+          label="Árido (E_cm, 3.1.3(2))"
+          value={sel.aggregate}
+          options={[
+            { value: "cuarcitico", label: "Cuarcítico" },
+            { value: "calizo", label: "Calizo (−10 %)" },
+            { value: "arenisca", label: "Arenisca (−30 %)" },
+            { value: "basaltico", label: "Basáltico (+20 %)" },
+          ]}
+          onChange={(v) => setSel({ ...sel, aggregate: v })}
+        />
         <SelectField label="Acero" value={sel.steel_grade} options={cat.steel_grades.map((x) => ({ value: x, label: x }))} onChange={(v) => setSel({ ...sel, steel_grade: v })} />
         <SelectField
           label="Rama superior del acero"
@@ -91,14 +102,14 @@ export default function Materials() {
             <h2 className="h2 mb-2">Hormigón {c.name}</h2>
             <table className="w-full text-sm">
               <tbody>
-                <Row k="f_ck" v={`${fmt(c.fck)} MPa`} ref_="Tabla 3.1" />
-                <Row k="f_cm = f_ck + 8" v={`${fmt(c.fcm)} MPa`} ref_="Tabla 3.1" />
-                <Row k="f_ctm" v={`${fmt(c.fctm, 3)} MPa`} ref_="Tabla 3.1" />
-                <Row k="f_ctk,0,05 / f_ctk,0,95" v={`${fmt(c.fctk_005, 3)} / ${fmt(c.fctk_095, 3)} MPa`} ref_="Tabla 3.1" />
-                <Row k="E_cm" v={`${fmt(c.Ecm, 0)} MPa`} ref_="Tabla 3.1" />
-                <Row k="ε_c1 / ε_cu1" v={`${fmt(c.eps_c1 * 1000, 3)} / ${fmt(c.eps_cu1 * 1000, 3)} ‰`} ref_="Tabla 3.1" />
-                <Row k="ε_c2 / ε_cu2 / n" v={`${fmt(c.eps_c2 * 1000, 3)} / ${fmt(c.eps_cu2 * 1000, 3)} ‰ / ${fmt(c.n, 3)}`} ref_="Tabla 3.1" />
-                <Row k="ε_c3 / ε_cu3" v={`${fmt(c.eps_c3 * 1000, 3)} / ${fmt(c.eps_cu3 * 1000, 3)} ‰`} ref_="Tabla 3.1" />
+                <Row k="f_ck" v={`${fmt(c.fck)} MPa`} ref_="Tabla A19.3.1" />
+                <Row k="f_cm = f_ck + 8" v={`${fmt(c.fcm)} MPa`} ref_="Tabla A19.3.1" />
+                <Row k="f_ctm" v={`${fmt(c.fctm, 3)} MPa`} ref_="Tabla A19.3.1" />
+                <Row k="f_ctk,0,05 / f_ctk,0,95" v={`${fmt(c.fctk_005, 3)} / ${fmt(c.fctk_095, 3)} MPa`} ref_="Tabla A19.3.1" />
+                <Row k="E_cm (árido seleccionado)" v={`${fmt(c.Ecm, 0)} MPa`} ref_="Tabla A19.3.1; 3.1.3(2)" />
+                <Row k="ε_c1 / ε_cu1" v={`${fmt(c.eps_c1 * 1000, 3)} / ${fmt(c.eps_cu1 * 1000, 3)} ‰`} ref_="Tabla A19.3.1" />
+                <Row k="ε_c2 / ε_cu2 / n" v={`${fmt(c.eps_c2 * 1000, 3)} / ${fmt(c.eps_cu2 * 1000, 3)} ‰ / ${fmt(c.n, 3)}`} ref_="Tabla A19.3.1" />
+                <Row k="ε_c3 / ε_cu3" v={`${fmt(c.eps_c3 * 1000, 3)} / ${fmt(c.eps_cu3 * 1000, 3)} ‰`} ref_="Tabla A19.3.1" />
                 <Row k="γ_c · α_cc · α_ct" v={`${fmt(c.gamma_c)} · ${fmt(c.alpha_cc)} · ${fmt(c.alpha_ct)}`} ref_="2.4.2.4; 3.1.6" />
                 <Row k="f_cd = α_cc·f_ck/γ_c" v={`${fmt(c.fcd, 3)} MPa`} ref_="3.1.6 (3.15)" />
                 <Row k="f_ctd = α_ct·f_ctk,0,05/γ_c" v={`${fmt(c.fctd, 3)} MPa`} ref_="3.1.6 (3.16)" />
@@ -110,8 +121,8 @@ export default function Materials() {
             <h2 className="h2 mb-2">Acero {s.name}</h2>
             <table className="w-full text-sm">
               <tbody>
-                <Row k="f_yk" v={`${fmt(s.fyk)} MPa`} />
-                <Row k="ε_uk / k = (f_t/f_y)_k" v={`${fmt(s.eps_uk * 100, 2)} % / ${fmt(s.k, 2)}`} ref_="Pendiente de verificación" />
+                <Row k="f_yk" v={`${fmt(s.fyk)} MPa`} ref_="3.2.2(3): 400–500" />
+                <Row k="ε_uk / k = (f_t/f_y)_k" v={`${fmt(s.eps_uk * 100, 2)} % / ${fmt(s.k, 2)}`} ref_="Art. 34-35 CE (pendiente)" />
                 <Row k="E_s" v={`${fmt(s.Es, 0)} MPa`} ref_="3.2.7(4)" />
                 <Row k="γ_s" v={fmt(s.gamma_s)} ref_="2.4.2.4" />
                 <Row k="f_yd = f_yk/γ_s" v={`${fmt(s.fyd, 3)} MPa`} ref_="3.2.7(2)" />

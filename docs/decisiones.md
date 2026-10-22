@@ -22,8 +22,9 @@ sobrescribirlos; el valor modificado queda registrado en cada cálculo y en el p
   dimensionado automático de T queda pendiente.
 
 ## D4 — Criterio de ductilidad x_u/d ≤ ξ_lim
-La EN 1992-1-1 no impone explícitamente un límite de x/d a secciones sin
-redistribución. Para garantizar un comportamiento dúctil se adopta como **criterio de
+El Anejo 19 no impone explícitamente un límite de x/d a secciones sin
+redistribución (5.5(4) se refiere a la redistribución de momentos y 5.6.3(2) a las rótulas
+plásticas del análisis plástico, con x_u/d ≤ 0,45 para f_ck ≤ 50). Para garantizar un comportamiento dúctil se adopta como **criterio de
 proyecto** la expresión (5.10) de 5.5(4) con δ configurable (δ = 1 por defecto →
 ξ_lim = 0,448 para f_ck ≤ 50 MPa). Además, en el dimensionado se exige la cedencia de
 la armadura traccionada (ξ ≤ ε_cu3/(ε_cu3 + ε_yd)). Ambos criterios se documentan en
@@ -60,3 +61,22 @@ El informe se construye solo con el resultado y la traza: no recalcula.
 `npm run start` compila el frontend y FastAPI lo sirve como estáticos desde el mismo
 proceso; CORS configurable con `HA_CORS_ORIGINS`. Esto permite publicar la aplicación
 detrás de un proxy inverso sin cambios de arquitectura.
+
+## D11 — Erratas del texto oficial
+La expresión de ε_c2 impresa en la tabla A19.3.1 («0,85») es incoherente con los valores
+tabulados de la misma tabla; se implementa 0,085, que los reproduce. Ver `docs/normativa.md`.
+
+## D12 — Armadura mínima según la expresión (9.1) del Anejo 19
+A_s,min = (W/z)·(f_ctm,fl/f_yd) con z = 0,8·h (aproximación que el propio Anejo admite;
+configurable), W módulo resistente bruto respecto a la fibra más traccionada (depende del signo
+del momento en secciones en T) y f_ctm,fl según (3.23). La alternativa 1,2·A_s,nec para
+elementos secundarios es una opción explícita del usuario; en comprobación solo está disponible
+para secciones rectangulares (A_s,nec con el bloque rectangular y el d real).
+
+## D13 — 9.2.1.2(3) sin dato de separación de estribos
+Si hay barras comprimidas que intervienen en la resistencia y no se indica la separación de
+estribos, la verificación queda «no evaluable» y el resultado global no se declara conforme.
+
+## D14 — Barras de capas superpuestas (8.2(3))
+Las capas interiores se colocan en las columnas de la primera capa de la misma cara. Si una capa
+interior tiene más barras que la primera, se informa del incumplimiento.

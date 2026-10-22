@@ -1,12 +1,12 @@
 """Materiales.
 
-Referencia de contraste: valores tabulados (redondeados) de la tabla 3.1 de la
-EN 1992-1-1:2004, que el Anejo 19 transpone. Los valores se han transcrito de
-memoria técnica del autor del software y NO se han cotejado con el texto oficial
-del Anejo 19 (no accesible desde el entorno de desarrollo): COTEJO PENDIENTE (ver
-docs/normativa.md). Se omite la fila f_ctk,0,05 porque no se pudo confirmar su
-transcripción; esa magnitud se comprueba mediante su relación analítica 0,7·f_ctm. Las tolerancias corresponden a medio dígito del redondeo de la
-tabla (p. ej. 0,05 MPa para f_ctm tabulada con un decimal).
+Referencia de contraste: tabla A19.3.1 del texto oficial del Anejo 19 (BOE n.º 190,
+10/08/2021, pág. 98308), cotejada con el PDF del BOE. Las tolerancias corresponden a
+medio dígito del redondeo de la tabla (p. ej. 0,05 MPa para valores con un decimal).
+
+Nota sobre f_ctk,0,05: la tabla da 3,1 MPa para C60/75, mientras que 0,7·f_ctm (con f_ctm
+sin redondear = 4,355) da 3,048. El valor tabulado se obtiene aplicando 0,7 a la f_ctm ya
+redondeada (0,7·4,4 = 3,08). Por eso esa fila se contrasta con tolerancia de 0,06 MPa.
 """
 
 import math
@@ -16,7 +16,7 @@ import pytest
 from core.materials import CONCRETE_FCK_CLASSES, Concrete, MaterialError, ReinforcingSteel, stress_strain_curves
 from core.parameters import ParameterSet
 
-#            fck  fctm  (no usado)  Ecm(GPa) eps_c1 eps_cu1 eps_c2 eps_cu2  n    eps_c3
+#            fck  fctm  fctk05  Ecm(GPa) eps_c1 eps_cu1 eps_c2 eps_cu2  n    eps_c3
 TABLE_3_1 = [
     (12, 1.6, 1.1, 27, 1.8, 3.5, 2.0, 3.5, 2.0, 1.75),
     (16, 1.9, 1.3, 29, 1.9, 3.5, 2.0, 3.5, 2.0, 1.75),
@@ -41,6 +41,7 @@ def test_table_3_1_formulas_reproduce_tabulated_values(row):
     c = Concrete(fck)
     assert c.fcm == fck + 8
     assert c.fctm == pytest.approx(fctm, abs=0.051)
+    assert c.fctk_005 == pytest.approx(fctk05, abs=0.06)
     assert c.fctk_005 == pytest.approx(0.7 * c.fctm)
     assert c.fctk_095 == pytest.approx(1.3 * c.fctm)
     assert c.Ecm / 1000 == pytest.approx(Ecm, abs=0.51)
@@ -127,9 +128,45 @@ def test_steel_inclined_branch():
         s.sigma(s.eps_ud * 1.01)
 
 
+def test_eps_c2_errata_in_official_formula():
+    """La tabla A19.3.1 imprime 2,0 + 0,85·(f_ck − 50)^0,53, pero sus valores tabulados
+    (2,2 / 2,3 / 2,4 / 2,5 / 2,6 ‰ para C55…C90) solo se reproducen con 0,085."""
+    for fck, tab in [(55, 2.2), (60, 2.3), (70, 2.4), (80, 2.5), (90, 2.6)]:
+        assert 2.0 + 0.085 * (fck - 50) ** 0.53 == pytest.approx(tab, abs=0.051)
+        assert abs(2.0 + 0.85 * (fck - 50) ** 0.53 - tab) > 1.0
+        assert Concrete(fck).eps_c2 * 1000 == pytest.approx(tab, abs=0.051)
+
+
+def test_fctm_fl_expression_3_23():
+    c = Concrete(25)
+    assert c.fctm_fl(500) == pytest.approx(1.1 * c.fctm)
+    assert c.fctm_fl(600) == pytest.approx(1.0 * c.fctm)
+    assert c.fctm_fl(800) == pytest.approx(c.fctm)  # el máximo con f_ctm
+
+
+def test_aggregate_factors_3_1_3():
+    base = Concrete(30).Ecm
+    assert Concrete(30, aggregate="calizo").Ecm == pytest.approx(0.9 * base)
+    assert Concrete(30, aggregate="arenisca").Ecm == pytest.approx(0.7 * base)
+    assert Concrete(30, aggregate="basaltico").Ecm == pytest.approx(1.2 * base)
+    with pytest.raises(MaterialError):
+        Concrete(30, aggregate="granito")
+
+
+def test_alpha_ct_fixed_and_alpha_cc_range():
+    from core.parameters import ParameterError
+    with pytest.raises(ParameterError):
+        ParameterSet({"alpha_ct": 0.9})
+    with pytest.raises(ParameterError):
+        ParameterSet({"alpha_cc": 0.8})
+    assert Concrete(25, ParameterSet({"alpha_cc": 0.85})).fcd == pytest.approx(0.85 * 25 / 1.5)
+
+
 def test_invalid_steel():
     with pytest.raises(MaterialError):
         ReinforcingSteel(300, 0.05, 1.08)
+    with pytest.raises(MaterialError):
+        ReinforcingSteel(600, 0.05, 1.08)  # 3.2.2(3): 400 ≤ f_yk ≤ 500
     with pytest.raises(MaterialError):
         ReinforcingSteel.from_grade("B600X")
     with pytest.raises(MaterialError):

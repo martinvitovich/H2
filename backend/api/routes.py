@@ -58,15 +58,19 @@ def catalog() -> dict:
 @router.post("/materiales")
 def materials(req: MaterialRequest) -> dict:
     p = ParameterSet(req.parameter_overrides)
-    c = Concrete.from_class(req.concrete_class, p, req.situation)
+    c = Concrete.from_class(req.concrete_class, p, req.situation, req.aggregate)
     s = ReinforcingSteel.from_grade(req.steel_grade, p, req.situation, req.steel_branch)
     return {"concrete": c.properties(), "steel": s.properties(), "curves": stress_strain_curves(c, s),
             "references": {
-                "concrete": "Anejo 19, tabla 3.1; 3.1.6 (3.15)-(3.16); 3.1.7 (3.17)-(3.22); 3.1.5 (3.14)",
-                "steel": "Anejo 19, 3.2.7, figura 3.8",
+                "concrete": "Anejo 19, tabla A19.3.1; 3.1.3(2); 3.1.6 (3.15)-(3.16); 3.1.7 (3.17)-(3.22); "
+                            "3.1.5 (3.14); 3.1.8 (3.23)",
+                "steel": "Anejo 19, 3.2.2(3); 3.2.7, figura A19.3.8",
             },
-            "notes": ["Las propiedades de ductilidad (ε_uk, k) asociadas a cada designación de acero "
-                      "están pendientes de verificación con el articulado del Código Estructural."]}
+            "notes": ["Las propiedades de ductilidad (ε_uk, k) de cada designación de acero: el Apéndice C "
+                      "del Anejo 19 remite a los Artículos 34 y 35 del Código Estructural, no consultados; "
+                      "valores pendientes de verificación (solo intervienen con la rama inclinada).",
+                      "ε_c2 para f_ck > 50: se usa 2,0 + 0,085·(f_ck − 50)^0,53, coherente con los valores "
+                      "tabulados; la expresión impresa en la tabla A19.3.1 (0,85) contiene una errata."]}
 
 
 @router.post("/secciones/propiedades")

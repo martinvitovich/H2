@@ -9,11 +9,11 @@ Estados:
 
 MODULES = [
     {"id": "materiales", "name": "Materiales", "status": "pendiente_validacion",
-     "detail": "Hormigón (tabla 3.1, 3.1.6, 3.1.7) y acero (3.2.7). Parámetros por cotejar con el texto oficial."},
+     "detail": "Hormigón (tabla A19.3.1, 3.1.6, 3.1.7, 3.1.8) y acero (3.2.7), cotejados con el texto oficial. Pendiente: ductilidad de cada designación de acero (Art. 34-35 CE)."},
     {"id": "secciones", "name": "Secciones", "status": "pendiente_validacion",
      "detail": "Rectangular y en T, armaduras en varias capas, separaciones 8.2."},
     {"id": "vigas_flexion", "name": "Vigas — flexión ELU", "status": "pendiente_validacion",
-     "detail": "Dimensionado (rectangular) y comprobación (rectangular y T) en flexión simple."},
+     "detail": "Dimensionado (rectangular) y comprobación (rectangular y T) en flexión simple. Cotejado con el texto oficial; pendiente contraste con ejemplos bibliográficos."},
     {"id": "vigas_cortante", "name": "Vigas — cortante ELU", "status": "no_disponible",
      "detail": "Fase 3."},
     {"id": "losas", "name": "Losas", "status": "no_disponible", "detail": "Pendiente."},

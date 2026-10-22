@@ -33,9 +33,9 @@ from .analysis import AnalysisError, BendingResult, analyse_bending
 
 VALIDATION_STATUS = (
     "Implementado. Validación matemática interna (equilibrio, soluciones cerradas y "
-    "comparación entre métodos) superada. Validación normativa independiente PENDIENTE: "
-    "los parámetros marcados como 'pendiente de verificación' no se han contrastado con "
-    "el texto oficial del Anejo 19."
+    "comparación entre métodos) superada. Ecuaciones y parámetros normativos cotejados con el "
+    "texto oficial del Anejo 19 (BOE-A-2021-13681), salvo los marcados como pendientes. "
+    "PENDIENTE: contraste con ejemplos resueltos de bibliografía independiente."
 )
 
 
@@ -58,6 +58,8 @@ class FlexureInput:
     layers: list[Layer] = field(default_factory=list)  # solo comprobación
     params: ParameterSet = field(default_factory=ParameterSet)
     element_name: str = "Viga"
+    secondary_element: bool = False          # 9.2.1.1(1): alternativa A_s,min = 1,2·A_s,nec
+    stirrup_spacing: float | None = None     # separación de estribos (mm), para 9.2.1.2(3)
 
     def validate(self) -> None:
         if not math.isfinite(self.M_Ed_knm):
@@ -66,6 +68,8 @@ class FlexureInput:
             raise FlexureInputError("El recubrimiento nominal debe ser positivo")
         if self.cover + self.stirrup_diameter >= self.shape.h / 2:
             raise FlexureInputError("Recubrimiento + estribo incompatibles con el canto")
+        if self.stirrup_spacing is not None and self.stirrup_spacing <= 0:
+            raise FlexureInputError("La separación de estribos debe ser positiva")
 
 
 # ----------------------------------------------------------------------------
@@ -93,6 +97,8 @@ def _new_trace(calc: str, method: str, inp: FlexureInput) -> CalcTrace:
         "rama_diagrama_acero": inp.steel_branch,
         "situacion_proyecto": inp.situation,
         "M_Ed_kNm": inp.M_Ed_knm,
+        "elemento_secundario_9_2_1_1": inp.secondary_element,
+        "separacion_estribos_mm": inp.stirrup_spacing,
     }
     tr.assume("Flexión simple: esfuerzo axil N_Ed = 0 (6.1).")
     tr.assume("Las secciones planas permanecen planas; adherencia perfecta (6.1(2)).")
@@ -104,6 +110,10 @@ def _new_trace(calc: str, method: str, inp: FlexureInput) -> CalcTrace:
              "durabilidad, adherencia ni resistencia al fuego (4.4.1).")
     tr.limit("No se comprueban cortante, torsión, anclajes, solapes, fisuración ni flechas.")
     tr.limit("La anchura eficaz del ala en secciones en T (5.3.2.1) debe introducirla el usuario.")
+    tr.limit("No se aplica la limitación de 6.1(5) a partes de sección con carga aproximadamente "
+             "centrada (alas comprimidas delgadas, e_d/h < 0,1).")
+    tr.limit("No se comprueba la disposición de 9.2.1.2(1) (momento de empotramiento parcial "
+             "β1 = 0,15 en apoyos) ni el reparto de la armadura en el ala de 9.2.1.2(2).")
     return tr
 
 
@@ -145,20 +155,54 @@ def ductility_limit(conc: Concrete, params: ParameterSet, tr: CalcTrace | None =
     return xi
 
 
-def as_min(conc: Concrete, steel: ReinforcingSteel, bt: float, d: float, params: ParameterSet,
-           tr: CalcTrace | None = None) -> float:
-    a = params["As_min_coef_fct"]
-    g = params["As_min_coef_geom"]
-    v1 = a * conc.fctm / steel.fyk * bt * d
-    v2 = g * bt * d
-    val = max(v1, v2)
+def section_modulus_tension(shape: Shape, sign: int) -> float:
+    """Módulo resistente de la sección bruta relativo a la fibra más traccionada (mm³)."""
+    yg = shape.centroid_y
+    dist = shape.h - yg if sign > 0 else yg
+    return shape.inertia / dist
+
+
+def as_min(conc: Concrete, steel: ReinforcingSteel, shape: Shape, sign: int, params: ParameterSet,
+           tr: CalcTrace | None = None, secondary: bool = False, As_req: float | None = None) -> float:
+    """Armadura mínima de tracción en vigas, Anejo 19, 9.2.1.1(1).
+
+    Expresión (9.1): A_s,min = (W/z)·(f_ctm,fl/f_yd), con z ≈ 0,8·h, W módulo resistente de la
+    sección bruta relativo a la fibra más traccionada y f_ctm,fl según (3.23).
+    Alternativa para elementos secundarios con riesgo de rotura frágil admisible:
+    A_s,min = 1,2·A_s,nec en ELU.
+    """
+    if secondary:
+        if As_req is None:
+            raise FlexureInputError("La alternativa de elemento secundario requiere A_s,nec")
+        k = params["As_min_secondary_factor"]
+        val = k * As_req
+        if tr:
+            tr.use_param(params, "As_min_secondary_factor")
+            tr.assume("Elemento secundario en el que es admisible cierto riesgo de rotura frágil: "
+                      "A_s,min = 1,2·A_s,nec (alternativa de 9.2.1.1(1), por decisión del usuario).")
+            tr.step("Armadura mínima de tracción (elemento secundario)",
+                    "Anejo 19, 9.2.1.1(1) (BOE pág. 98424)", "A_s,min = 1,2·A_s,nec",
+                    f"A_s,min = {fmt(k)}·{fmt(As_req, 1)}", val, "mm²", "A_s,min")
+        return val
+    h = shape.h
+    W = section_modulus_tension(shape, sign)
+    zf = params["z_factor_asmin"]
+    z = zf * h
+    fctm_fl = conc.fctm_fl(h)
+    val = W / z * fctm_fl / steel.fyd
     if tr:
-        tr.use_param(params, "As_min_coef_fct")
-        tr.use_param(params, "As_min_coef_geom")
-        tr.step("Armadura mínima de tracción", "Anejo 19, 9.2.1.1(1), expresión (9.1N)",
-                "A_s,min = max(0,26·(f_ctm/f_yk)·b_t·d; 0,0013·b_t·d)",
-                f"A_s,min = max({fmt(a)}·({fmt(conc.fctm)}/{fmt(steel.fyk)})·{fmt(bt)}·{fmt(d, 1)}; "
-                f"{fmt(g, 4)}·{fmt(bt)}·{fmt(d, 1)})", val, "mm²", "A_s,min")
+        tr.use_param(params, "z_factor_asmin")
+        tr.step("Resistencia media a flexotracción", "Anejo 19, 3.1.8(1), expresión (3.23) (BOE pág. 98315)",
+                "f_ctm,fl = max{(1,6 − h/1000)·f_ctm; f_ctm}",
+                f"f_ctm,fl = max{{(1,6 − {fmt(h)}/1000)·{fmt(conc.fctm)}; {fmt(conc.fctm)}}}",
+                fctm_fl, "MPa", "f_ctm,fl")
+        tr.step("Módulo resistente bruto relativo a la fibra más traccionada", "Geometría (9.2.1.1(1))",
+                "W = I_g/v_t", f"W = {fmt(shape.inertia, 0)}/{fmt(shape.inertia / W, 1)}",
+                W, "mm³", "W")
+        tr.step("Armadura mínima de tracción", "Anejo 19, 9.2.1.1(1), expresión (9.1) (BOE pág. 98424)",
+                "A_s,min = (W/z)·(f_ctm,fl/f_yd);  z = 0,8·h",
+                f"A_s,min = ({fmt(W, 0)}/({fmt(zf)}·{fmt(h)}))·({fmt(fctm_fl)}/{fmt(steel.fyd)})",
+                val, "mm²", "A_s,min")
     return val
 
 
@@ -167,22 +211,9 @@ def as_max(Ac: float, params: ParameterSet, tr: CalcTrace | None = None) -> floa
     val = k * Ac
     if tr:
         tr.use_param(params, "As_max_coef")
-        tr.step("Armadura máxima (tracción o compresión)", "Anejo 19, 9.2.1.1(3)",
+        tr.step("Armadura máxima (tracción o compresión)", "Anejo 19, 9.2.1.1(3) (BOE pág. 98424)",
                 "A_s,max = 0,04·A_c", f"A_s,max = {fmt(k)}·{fmt(Ac, 0)}", val, "mm²", "A_s,max")
     return val
-
-
-def _bt(shape: Shape, sign: int) -> float:
-    """Ancho medio de la zona traccionada (9.2.1.1(1)).
-
-    En T con momento positivo el ala está comprimida → b_t = b_w. Con momento negativo
-    el ala está traccionada; se adopta b_t = b_w del lado de la seguridad respecto a
-    la cuantía mínima solo si el ala no se considera; aquí se toma b_f (ala traccionada)
-    y se advierte.
-    """
-    if isinstance(shape, TShape):
-        return shape.bw if sign > 0 else shape.bf
-    return shape.bounding_width
 
 
 # ----------------------------------------------------------------------------
@@ -287,7 +318,7 @@ def design_flexure(inp: FlexureInput) -> dict:
     tr.step("Factor de resistencia efectiva", "Anejo 19, 3.1.7(3), expresiones (3.21)-(3.22)",
             "η = 1,0 (f_ck ≤ 50);  η = 1,0 − (f_ck − 50)/200", f"f_ck = {fmt(conc.fck)} MPa",
             conc.eta, "-", "η")
-    tr.step("Deformación última del hormigón", "Anejo 19, tabla 3.1", "ε_cu3 (= ε_cu2)",
+    tr.step("Deformación última del hormigón", "Anejo 19, tabla A19.3.1", "ε_cu3 (= ε_cu2)",
             f"f_ck = {fmt(conc.fck)} MPa", conc.eps_cu3 * 1000, "‰", "ε_cu3")
     steel.trace_design_values(tr)
 
@@ -330,7 +361,7 @@ def design_flexure(inp: FlexureInput) -> dict:
                 "ε_s2 = ε_cu3·(x_lim − d2)/x_lim",
                 f"ε_s2 = {fmt(conc.eps_cu3*1000)}·({fmt(bd.x_lim, 1)} − {fmt(d2_0, 1)})/{fmt(bd.x_lim, 1)}",
                 conc.eps_cu3 * (bd.x_lim - d2_0) / bd.x_lim * 1000, "‰", "ε_s2")
-        tr.step("Tensión de la armadura comprimida", "Anejo 19, 3.2.7", "σ_s2 = min(E_s·ε_s2; f_yd)",
+        tr.step("Tensión de la armadura comprimida", "Anejo 19, 3.2.7(2)", "σ_s2 = min(E_s·ε_s2; f_yd)",
                 "", bd.sigma_s2, "MPa", "σ_s2")
         tr.step("Armadura de compresión necesaria", "Equilibrio de momentos",
                 "A_s2 = (M_Ed − M_lim)/((σ_s2 − η·f_cd)·(d − d2))",
@@ -339,7 +370,7 @@ def design_flexure(inp: FlexureInput) -> dict:
         tr.step("Armadura de tracción necesaria", "Equilibrio de fuerzas",
                 "A_s1 = (η·f_cd·b·λ·x_lim + A_s2·(σ_s2 − η·f_cd))/f_yd", "", bd.As1, "mm²", "A_s1")
 
-    Asmin = as_min(conc, steel, _bt(inp.shape, sign), d0, p, tr)
+    Asmin = as_min(conc, steel, inp.shape, sign, p, tr, inp.secondary_element, bd.As1)
     Ac = inp.shape.area
     Asmax = as_max(Ac, p, tr)
     As1_req = max(bd.As1, Asmin)
@@ -376,7 +407,7 @@ def design_flexure(inp: FlexureInput) -> dict:
             tr.check("Armadura de compresión ≥ necesaria", "Equilibrio 6.1",
                      f"A_s2,nec = {fmt(bd_act.As2, 0)} mm²", f"A_s2 = {fmt(A2, 0)} mm²",
                      A2 >= bd_act.As2 - 1e-6)
-        _common_checks(tr, sec, conc, steel, sign, tface, cface, Asmin_act, Asmax)
+        _common_checks(tr, sec, conc, steel, sign, tface, cface, Asmin_act, Asmax, res, inp)
         verification = res.to_dict()
         proposal = {
             "layers": [l.__dict__ for l in sec.layers],
@@ -484,7 +515,7 @@ def _evaluate_candidate(inp, conc, steel, M, sign, tface, cface, xi_lim, layers_
     bd = block_design(inp.shape.b, d, d2, M, conc, steel, xi_lim)
     if not bd.feasible:
         return None
-    Asmin = as_min(conc, steel, _bt(inp.shape, sign), d, inp.params)
+    Asmin = as_min(conc, steel, inp.shape, sign, inp.params, None, inp.secondary_element, bd.As1)
     A1, A2 = sec.area_on(tface), sec.area_on(cface)
     if A1 < max(bd.As1, Asmin) - 1e-6 or A2 < bd.As2 - 1e-6:
         return None
@@ -505,7 +536,7 @@ def _trace_verification(tr: CalcTrace, res: BendingResult, conc, steel, M_Ed_knm
             "Anejo 19, 6.1 y 3.1.7(1): equilibrio ΣN = 0 resuelto numéricamente",
             "ΣN(x) = ∫σ_c(ε(y))·b(y)·dy − Σ A_si·σ_si = 0", f"residuo = {fmt(res.residual_N/1e3, 6)} kN",
             res.x, "mm", "x")
-    tr.step("Deformación en la fibra más comprimida", "Anejo 19, 6.1(5)-(6), figura 6.1",
+    tr.step("Deformación en la fibra más comprimida", "Anejo 19, 6.1(3), figura A19.6.1",
             "ε_c = ε_cu2 (pivote B) o fijada por ε_ud (pivote A)", f"pivote {res.pivot}",
             res.eps_top * 1000, "‰", "ε_c")
     tr.step("Resultante de compresiones del hormigón", "Integración del diagrama parábola-rectángulo",
@@ -529,10 +560,13 @@ def _trace_verification(tr: CalcTrace, res: BendingResult, conc, steel, M_Ed_knm
              yielded, "Si no plastifica, la rotura sería frágil (sin aviso).")
 
 
-def _common_checks(tr, sec: ReinforcedSection, conc, steel, sign, tface, cface, Asmin, Asmax):
+def _common_checks(tr, sec: ReinforcedSection, conc, steel, sign, tface, cface, Asmin, Asmax,
+                   res: BendingResult, inp: FlexureInput):
     A1, A2 = sec.area_on(tface), sec.area_on(cface)
     tr.check("Armadura mínima de tracción", "Anejo 19, 9.2.1.1(1)", f"A_s,min = {fmt(Asmin, 0)} mm²",
-             f"A_s = {fmt(A1, 0)} mm²", A1 >= Asmin - 1e-6)
+             f"A_s = {fmt(A1, 0)} mm²", A1 >= Asmin - 1e-6,
+             "" if A1 >= Asmin - 1e-6 else "Con cuantía inferior a A_s,min la sección se considera sin "
+             "armar (9.2.1.1(2), apartado 12).")
     tr.check("Armadura máxima de tracción", "Anejo 19, 9.2.1.1(3)", f"A_s = {fmt(A1, 0)} mm²",
              f"A_s,max = {fmt(Asmax, 0)} mm²", A1 <= Asmax + 1e-6)
     if A2 > 0:
@@ -540,10 +574,31 @@ def _common_checks(tr, sec: ReinforcedSection, conc, steel, sign, tface, cface, 
                  f"A_s,max = {fmt(Asmax, 0)} mm²", A2 <= Asmax + 1e-6)
     tr.check("Separación libre entre barras", "Anejo 19, 8.2(2)",
              "s ≥ s_min" if not sec.issues else "; ".join(sec.issues), "s_min según 8.2(2)", not sec.issues)
-    if isinstance(sec.shape, TShape) and sign < 0:
-        tr.warn("Momento negativo en sección en T: el ala está traccionada; se ha tomado b_t = b_f "
-                "para la armadura mínima. La distribución de la armadura en el ala (9.2.1.2(2)) "
-                "no se comprueba.")
+    # 9.2.1.2(3): barras comprimidas consideradas en el cálculo sujetas con s_t ≤ 15·φ
+    comp = [b for b in res.bars if b.force < 0]
+    if comp:
+        k = tr.use_param(inp.params, "compression_bar_tie_factor")
+        phi = min(b.diameter for b in comp)
+        lim = k * phi
+        if inp.stirrup_diameter <= 0:
+            ok, dem = False, "sin armadura transversal"
+        elif inp.stirrup_spacing is None:
+            ok, dem = None, "separación de estribos no indicada"
+        else:
+            ok, dem = inp.stirrup_spacing <= lim + 1e-9, f"s_t = {fmt(inp.stirrup_spacing)} mm"
+        tr.check("Sujeción de las barras comprimidas consideradas en el cálculo",
+                 "Anejo 19, 9.2.1.2(3) (BOE pág. 98425)", dem, f"15·φ = {fmt(lim)} mm (φ{fmt(phi)})", ok,
+                 "Indique la separación de estribos para evaluar esta condición." if ok is None else "")
+
+
+def _required_tension_area(inp, sec, conc, steel, sign, tface, cface, xi_lim) -> float | None:
+    if not isinstance(inp.shape, RectangularShape) or inp.M_Ed_knm == 0:
+        return None
+    d = sec.centroid_depth(tface)
+    dc = sec.centroid_depth(cface)
+    d2 = inp.shape.h - dc if dc is not None else inp.cover + inp.stirrup_diameter
+    bd = block_design(inp.shape.b, d, d2, knm_to_nmm(abs(inp.M_Ed_knm)), conc, steel, xi_lim)
+    return bd.As1 if bd.feasible else None
 
 
 def _mat_dict(conc: Concrete, steel: ReinforcingSteel) -> dict:
@@ -568,10 +623,10 @@ def check_flexure(inp: FlexureInput) -> dict:
     tr.inputs["capas"] = [l.__dict__ for l in inp.layers]
     tr.assume("Se descuenta el hormigón desplazado por las barras situadas en la zona comprimida.")
     conc.trace_design_values(tr)
-    tr.step("Exponente de la parábola", "Anejo 19, tabla 3.1", "n", f"f_ck = {fmt(conc.fck)}", conc.n, "-", "n")
-    tr.step("Deformación de inicio de la rama horizontal", "Anejo 19, tabla 3.1", "ε_c2", "",
+    tr.step("Exponente de la parábola", "Anejo 19, tabla A19.3.1", "n", f"f_ck = {fmt(conc.fck)}", conc.n, "-", "n")
+    tr.step("Deformación de inicio de la rama horizontal", "Anejo 19, tabla A19.3.1", "ε_c2", "",
             conc.eps_c2 * 1000, "‰", "ε_c2")
-    tr.step("Deformación última", "Anejo 19, tabla 3.1", "ε_cu2", "", conc.eps_cu2 * 1000, "‰", "ε_cu2")
+    tr.step("Deformación última", "Anejo 19, tabla A19.3.1", "ε_cu2", "", conc.eps_cu2 * 1000, "‰", "ε_cu2")
     steel.trace_design_values(tr)
     sec.trace_geometry(tr)
 
@@ -599,9 +654,20 @@ def check_flexure(inp: FlexureInput) -> dict:
                     "el ancho comprimido hacia la fibra extrema.")
     except AnalysisError as exc:
         tr.warn(f"Bloque rectangular no aplicable: {exc}")
-    Asmin = as_min(conc, steel, _bt(inp.shape, sign), d, p, tr)
+    secondary = inp.secondary_element
+    As_req = None
+    if secondary:
+        As_req = _required_tension_area(inp, sec, conc, steel, sign, tface, cface, xi_lim)
+        if As_req is None:
+            secondary = False
+            tr.warn("No se ha podido obtener A_s,nec para la alternativa de elemento secundario "
+                    "(solo disponible en secciones rectangulares): se aplica la expresión (9.1).")
+        else:
+            tr.step("Armadura de tracción necesaria en ELU (para la alternativa de 9.2.1.1(1))",
+                    "Bloque rectangular (3.1.7(3)) con d real", "A_s,nec", "", As_req, "mm²", "A_s,nec")
+    Asmin = as_min(conc, steel, inp.shape, sign, p, tr, secondary, As_req)
     Asmax = as_max(inp.shape.area, p, tr)
-    _common_checks(tr, sec, conc, steel, sign, tface, cface, Asmin, Asmax)
+    _common_checks(tr, sec, conc, steel, sign, tface, cface, Asmin, Asmax, res, inp)
     if res.xi > xi_lim:
         tr.warn("La fibra neutra supera el límite de ductilidad adoptado: conviene disponer armadura "
                 "de compresión o aumentar la sección.")

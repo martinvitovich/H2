@@ -196,6 +196,7 @@ class ReinforcedSection:
         edge = self.cover + self.stirrup_diameter
         for face in ("inferior", "superior"):
             prev_depth = None
+            first_xs: list[float] | None = None
             prev_diam = None
             for idx, L in enumerate([l for l in self.layers if l.face == face]):
                 if L.depth is not None:
@@ -219,8 +220,25 @@ class ReinforcedSection:
                 if xb < xa - 1e-9 or (L.n > 1 and xb - xa < 1e-9):
                     raise SectionError(f"Capa {idx + 1} ({face}): las barras no caben en el ancho disponible")
                 xs = [(xa + xb) / 2] if L.n == 1 else [xa + i * (xb - xa) / (L.n - 1) for i in range(L.n)]
+                if first_xs is None:
+                    first_xs = xs
+                else:
+                    # 8.2(3): las barras de cada capa, en la misma vertical que las de la primera
+                    N = len(first_xs)
+                    cols = sorted({round(i * (N - 1) / (L.n - 1)) for i in range(L.n)}) if 2 <= L.n <= N else []
+                    if len(cols) == L.n:
+                        xs = [first_xs[c] for c in cols]
+                        if min(xs) - L.diameter / 2 < x0 + edge - 1e-9 or \
+                                max(xs) + L.diameter / 2 > x0 + bw - edge + 1e-9:
+                            self.issues.append(
+                                f"Capa {idx + 1} ({face}): al alinear las barras con la primera capa "
+                                "invaden el recubrimiento lateral")
+                    else:
+                        self.issues.append(
+                            f"Capa {idx + 1} ({face}) de {L.n}φ{L.diameter:g}: las barras no pueden quedar en "
+                            "la misma vertical que las de la primera capa (8.2(3))")
                 if L.n > 1:
-                    clear_h = (xb - xa) / (L.n - 1) - L.diameter
+                    clear_h = min(b - a for a, b in zip(xs, xs[1:])) - L.diameter
                     smin = min_clear_spacing(L.diameter, self.dg, self.params)
                     if clear_h < smin - 1e-9:
                         self.issues.append(

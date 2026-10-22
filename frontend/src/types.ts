@@ -21,7 +21,12 @@ export interface Parameter {
   unit: string;
   description: string;
   reference: string;
-  status: "confirmado_fuente_secundaria" | "pendiente_verificacion" | "definido_por_usuario";
+  status:
+    | "verificado_texto_oficial"
+    | "confirmado_fuente_secundaria"
+    | "pendiente_verificacion"
+    | "definido_por_usuario"
+    | "no_normativo";
   note: string;
   min_value: number | null;
   max_value: number | null;
@@ -60,6 +65,8 @@ export interface FlexureRequest {
   assumed_bar_diameter: number;
   layers: LayerIn[];
   parameter_overrides: Record<string, unknown>;
+  secondary_element: boolean;
+  stirrup_spacing: number | null;
 }
 
 export interface Bar {

@@ -175,6 +175,13 @@ export default function Beams() {
                 onChange={(v) => update({ stirrup_diameter: v })}
               />
               <NumberField label="Tamaño máx. árido d_g" unit="mm" value={beam.dg} onChange={(v) => update({ dg: v })} />
+              <NumberField
+                label="Separación de estribos s_t"
+                unit="mm"
+                value={beam.stirrup_spacing ?? undefined}
+                onChange={(v) => update({ stirrup_spacing: Number.isFinite(v) ? v : null })}
+                hint="Para 9.2.1.2(3): s_t ≤ 15·φ de las barras comprimidas"
+              />
             </div>
           </section>
 
@@ -206,6 +213,17 @@ export default function Beams() {
           <section className="card space-y-3">
             <h2 className="h2">Solicitación y armado</h2>
             <NumberField label="Momento flector de cálculo M_Ed" unit="kN·m" value={beam.M_Ed_kNm} step={1} onChange={(v) => update({ M_Ed_kNm: v })} hint="Positivo: tracción en la cara inferior. Flexión simple (N_Ed = 0)." />
+            <label className="flex items-start gap-2 text-xs text-slate-700">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={beam.secondary_element}
+                onChange={(e) => update({ secondary_element: e.target.checked })}
+              />
+              <span>
+                Elemento secundario en el que es admisible cierto riesgo de rotura frágil: A_s,min = 1,2·A_s,nec (alternativa de 9.2.1.1(1)).
+              </span>
+            </label>
             {beam.mode === "design" ? (
               <SelectField
                 label="Diámetro supuesto para el canto útil inicial [mm]"

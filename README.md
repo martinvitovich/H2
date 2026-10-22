@@ -8,16 +8,16 @@ advertencias. Genera informes PDF y guarda proyectos.
 
 > **Aviso.** Herramienta de apoyo académico y profesional. Los resultados deben ser
 > revisados independientemente por un ingeniero estructural responsable antes de su uso
-> en un proyecto real. Varios parámetros normativos están **pendientes de cotejo con el
-> texto oficial** (ver [docs/normativa.md](docs/normativa.md)).
+> en un proyecto real. Los parámetros se han cotejado con el texto oficial del Anejo 19 (BOE);
+> lo que sigue pendiente se detalla en [docs/normativa.md](docs/normativa.md).
 
-## Funcionalidades (v0.1.0)
+## Funcionalidades (v0.2.0)
 
 - **Vigas — flexión simple ELU**: dimensionado de secciones rectangulares (con armadura
   de compresión si procede), propuesta de barras con alternativas, comprobación de
   secciones rectangulares y en T con armaduras en varias capas (método general
-  parábola-rectángulo), armaduras mínima/máxima (9.2.1.1), separaciones (8.2), criterio
-  de ductilidad.
+  parábola-rectángulo), armaduras mínima/máxima (9.2.1.1, expresión (9.1)), sujeción de
+  barras comprimidas (9.2.1.2(3)), separaciones (8.2), criterio de ductilidad.
 - Materiales (tabla 3.1, diagramas de cálculo), secciones con dibujo a escala.
 - «Normativa y procedimiento» en cada cálculo; configuración normativa editable.
 - Informes PDF; proyectos guardados en JSON versionado (importar/exportar).

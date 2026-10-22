@@ -10,8 +10,8 @@ por tramos (rectangulares y en T), según las hipótesis de Anejo 19, 6.1:
   bloque rectangular (3.1.7(3), expresiones (3.19)-(3.22));
 * acero: diagrama bilineal de cálculo de 3.2.7(2) con rama superior horizontal
   (sin límite de deformación) o inclinada (limitada a ε_ud);
-* deformaciones límite (6.1(5)-(6)): ε_cu2 (ε_cu3 con bloque rectangular) en la
-  fibra más comprimida y ε_ud en la armadura más traccionada si la rama es inclinada.
+* deformaciones límite (6.1(3), figura A19.6.1): ε_cu2 (ε_cu3 con bloque rectangular)
+  en la fibra más comprimida y ε_ud en la armadura más traccionada si la rama es inclinada.
 
 Convenio: la fibra comprimida está arriba en el sistema orientado; los
 acortamientos y las fuerzas de compresión son positivos.

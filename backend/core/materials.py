@@ -12,18 +12,18 @@ import math
 from dataclasses import dataclass, field
 from typing import Literal
 
-from .parameters import ParameterSet, VerificationStatus
+from .parameters import AGGREGATE_ECM_FACTORS, ParameterSet
 from .trace import CalcTrace, fmt
 from .units import PERMIL
 
-# Clases resistentes de la tabla 3.1 del Anejo 19 (f_ck en MPa).
+# Clases resistentes de la tabla A19.3.1 del Anejo 19 (f_ck en MPa), BOE pág. 98308.
 CONCRETE_FCK_CLASSES: dict[str, float] = {
     "C12/15": 12, "C16/20": 16, "C20/25": 20, "C25/30": 25, "C30/37": 30,
     "C35/45": 35, "C40/50": 40, "C45/55": 45, "C50/60": 50, "C55/67": 55,
     "C60/75": 60, "C70/85": 70, "C80/95": 80, "C90/105": 90,
 }
 
-TABLE_3_1 = "Anejo 19, 3.1.2–3.1.3, tabla 3.1"
+TABLE_3_1 = "Anejo 19, tabla A19.3.1 (BOE pág. 98308)"
 
 
 class MaterialError(ValueError):
@@ -38,22 +38,26 @@ class Concrete:
     params: ParameterSet = field(default_factory=ParameterSet)
     situation: str = "persistente"
     name: str = ""
+    aggregate: str = "cuarcitico"
 
     def __post_init__(self) -> None:
         if not (12.0 <= self.fck <= 90.0):
             raise MaterialError(
-                f"f_ck = {self.fck} MPa fuera del rango de la tabla 3.1 (12–90 MPa)"
+                f"f_ck = {self.fck} MPa fuera del rango de la tabla A19.3.1 (12–90 MPa, 3.1.2(2))"
             )
+        if self.aggregate not in AGGREGATE_ECM_FACTORS:
+            raise MaterialError(f"Tipo de árido desconocido: {self.aggregate} "
+                                f"({', '.join(AGGREGATE_ECM_FACTORS)})")
         if not self.name:
             self.name = next((k for k, v in CONCRETE_FCK_CLASSES.items() if v == self.fck),
                              f"f_ck = {self.fck:g} MPa")
 
     @classmethod
     def from_class(cls, cls_name: str, params: ParameterSet | None = None,
-                   situation: str = "persistente") -> "Concrete":
+                   situation: str = "persistente", aggregate: str = "cuarcitico") -> "Concrete":
         if cls_name not in CONCRETE_FCK_CLASSES:
             raise MaterialError(f"Clase de hormigón desconocida: {cls_name}")
-        return cls(CONCRETE_FCK_CLASSES[cls_name], params or ParameterSet(), situation, cls_name)
+        return cls(CONCRETE_FCK_CLASSES[cls_name], params or ParameterSet(), situation, cls_name, aggregate)
 
     # --- Tabla 3.1: relaciones analíticas ---
     @property
@@ -79,9 +83,19 @@ class Concrete:
         return 1.3 * self.fctm
 
     @property
-    def Ecm(self) -> float:
-        """Módulo de elasticidad secante (MPa): 22·(f_cm/10)^0,3 GPa."""
+    def Ecm_quartzite(self) -> float:
+        """Módulo secante para áridos cuarcíticos (MPa): 22·(f_cm/10)^0,3 GPa (tabla A19.3.1)."""
         return 22000.0 * (self.fcm / 10.0) ** 0.3
+
+    @property
+    def Ecm(self) -> float:
+        """Módulo secante corregido por el tipo de árido, 3.1.3(2)."""
+        return AGGREGATE_ECM_FACTORS[self.aggregate] * self.Ecm_quartzite
+
+    def fctm_fl(self, h: float) -> float:
+        """Resistencia media a flexotracción, expresión (3.23): max{(1,6 − h/1000)·f_ctm; f_ctm}
+        con h en mm (3.1.8(1), BOE pág. 98315)."""
+        return max((1.6 - h / 1000.0) * self.fctm, self.fctm)
 
     @property
     def eps_c1(self) -> float:
@@ -95,6 +109,9 @@ class Concrete:
 
     @property
     def eps_c2(self) -> float:
+        # ERRATA del texto oficial: la tabla A19.3.1 imprime «2,0 + 0,85·(f_ck − 50)^0,53», pero
+        # los valores tabulados en la propia tabla (2,2; 2,3; 2,4; 2,5; 2,6 ‰) solo se obtienen
+        # con el coeficiente 0,085. Se adopta 0,085 (ver docs/normativa.md).
         if self.fck <= 50.0:
             return 2.0 * PERMIL
         return (2.0 + 0.085 * (self.fck - 50.0) ** 0.53) * PERMIL
@@ -191,6 +208,7 @@ class Concrete:
             "eps_cu2": self.eps_cu2, "n": self.n, "eps_c3": self.eps_c3,
             "eps_cu3": self.eps_cu3, "gamma_c": self.gamma_c, "alpha_cc": self.alpha_cc,
             "alpha_ct": self.alpha_ct, "fcd": self.fcd, "fctd": self.fctd,
+            "aggregate": self.aggregate, "Ecm_quartzite": self.Ecm_quartzite,
             "lambda": self.lam, "eta": self.eta, "situation": self.situation,
         }
 
@@ -205,16 +223,17 @@ class Concrete:
         else:
             tr.step("Resistencia media a tracción", TABLE_3_1, "f_ctm = 2,12·ln(1 + f_cm/10)",
                     f"f_ctm = 2,12·ln(1 + {fmt(self.fcm)}/10)", self.fctm, "MPa", "f_ctm")
-        tr.step("Resistencia de cálculo a compresión", "Anejo 19, 3.1.6(1), expresión (3.15)",
+        tr.step("Resistencia de cálculo a compresión", "Anejo 19, 3.1.6(1), expresión (3.15) (BOE pág. 98313)",
                 "f_cd = α_cc·f_ck/γ_c", f"f_cd = {fmt(a)}·{fmt(self.fck)}/{fmt(g)}",
                 self.fcd, "MPa", "f_cd")
 
 
 # --- Acero para armaduras pasivas ---
 
-# Designaciones habituales del Código Estructural. Las propiedades de ductilidad
-# (ε_uk, k) se asocian a las clases B y C del apéndice C de la EN 1992-1-1 y deben
-# verificarse contra el articulado del Código Estructural.
+# Designaciones habituales del Código Estructural. El Apéndice C del Anejo 19 remite a los
+# Artículos 34 y 35 del Código Estructural para las propiedades de ductilidad (ε_uk, k), que
+# no se han consultado: los valores siguientes (clases B y C de la EN 1992-1-1) están
+# PENDIENTES de verificación. Solo intervienen con la rama inclinada del diagrama.
 STEEL_GRADES: dict[str, dict] = {
     "B400S": {"fyk": 400.0, "eps_uk": 0.050, "k": 1.08},
     "B500S": {"fyk": 500.0, "eps_uk": 0.050, "k": 1.08},
@@ -236,8 +255,8 @@ class ReinforcingSteel:
     name: str = ""
 
     def __post_init__(self) -> None:
-        if not (400.0 <= self.fyk <= 600.0):
-            raise MaterialError("f_yk fuera del rango 400–600 MPa (Anejo 19, 3.2.2(3))")
+        if not (400.0 <= self.fyk <= 500.0):
+            raise MaterialError("f_yk fuera del rango de aplicación 400–500 MPa (Anejo 19, 3.2.2(3))")
         if not (0.01 <= self.eps_uk <= 0.2):
             raise MaterialError("ε_uk fuera de rango razonable (1–20 %)")
         if not (1.0 <= self.k <= 1.5):
@@ -284,7 +303,7 @@ class ReinforcingSteel:
         return self.k * self.fyk / self.gamma_s
 
     def sigma(self, eps: float) -> float:
-        """Diagrama de cálculo (3.2.7(2), figura 3.8). Simétrico en tracción/compresión."""
+        """Diagrama de cálculo (3.2.7(2), figura A19.3.8). Simétrico en tracción/compresión."""
         sgn = 1.0 if eps >= 0 else -1.0
         e = abs(eps)
         if e <= self.eps_yd:
@@ -306,14 +325,14 @@ class ReinforcingSteel:
     def trace_design_values(self, tr: CalcTrace) -> None:
         g = tr.use_param(self.params, f"gamma_s_{'accidental' if self.situation == 'accidental' else 'persistente'}")
         es = tr.use_param(self.params, "Es")
-        tr.step("Límite elástico de cálculo", "Anejo 19, 3.2.7(2), figura 3.8",
+        tr.step("Límite elástico de cálculo", "Anejo 19, 3.2.7(2), figura A19.3.8",
                 "f_yd = f_yk/γ_s", f"f_yd = {fmt(self.fyk)}/{fmt(g)}", self.fyd, "MPa", "f_yd")
-        tr.step("Deformación de cedencia de cálculo", "Anejo 19, 3.2.7(2), figura 3.8",
+        tr.step("Deformación de cedencia de cálculo", "Anejo 19, 3.2.7(2), figura A19.3.8",
                 "ε_yd = f_yd/E_s", f"ε_yd = {fmt(self.fyd)}/{fmt(es, 0)}",
                 self.eps_yd * 1000, "‰", "ε_yd")
         if self.branch == "inclinada":
             tr.use_param(self.params, "eps_ud_factor")
-            tr.step("Deformación límite de cálculo", "Anejo 19, 3.2.7(2), nota",
+            tr.step("Deformación límite de cálculo", "Anejo 19, 3.2.7(2) a)",
                     "ε_ud = 0,9·ε_uk", f"ε_ud = {fmt(self.params['eps_ud_factor'])}·{fmt(self.eps_uk*1000)} ‰",
                     self.eps_ud * 1000, "‰", "ε_ud")
 

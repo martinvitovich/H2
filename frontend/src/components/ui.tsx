@@ -26,6 +26,8 @@ export function StatusBadge({ status }: { status: ModuleStatus }) {
 }
 
 const PARAM_STATUS: Record<string, { label: string; cls: string }> = {
+  verificado_texto_oficial: { label: "Verificado (texto oficial)", cls: "bg-emerald-50 text-emerald-800" },
+  no_normativo: { label: "Criterio no normativo", cls: "bg-slate-100 text-slate-700" },
   confirmado_fuente_secundaria: { label: "Confirmado (fuente secundaria)", cls: "bg-emerald-50 text-emerald-800" },
   pendiente_verificacion: { label: "Pendiente de verificación", cls: "bg-amber-50 text-amber-800" },
   definido_por_usuario: { label: "Definido por el usuario", cls: "bg-sky-50 text-sky-800" },

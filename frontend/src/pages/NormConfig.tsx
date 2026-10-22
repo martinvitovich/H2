@@ -59,8 +59,8 @@ export default function NormConfig() {
         <div className="card mb-4 text-sm">
           <div className="font-semibold">{norm.name}</div>
           <div className="text-slate-600">{norm.edition}</div>
-          <p className="mt-2 text-xs text-amber-800">
-            El texto oficial del Anejo 19 no pudo consultarse desde el entorno de desarrollo. Los valores «pendiente de verificación» proceden de la estructura de la EN 1992-1-1 que el Anejo transpone y deben cotejarse con el texto oficial (ver docs/normativa.md).
+          <p className="mt-2 text-xs text-slate-600">
+            Los parámetros normativos se han cotejado con el texto oficial publicado en el BOE (la referencia indica la página). Los valores que dependen de otras disposiciones no consultadas figuran como «pendiente de verificación»; la matriz completa está en docs/normativa.md.
           </p>
         </div>
       )}

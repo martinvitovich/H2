@@ -255,7 +255,9 @@ def build_flexure_report(result: dict, request: dict, project_name: str = "", au
     for l in tr["limitations"]:
         E.append(_p("• " + l, S["base"]))
     E.append(Spacer(1, 6))
-    E.append(_p(f"Documento generado por {SOFTWARE_NAME} v{__version__} el {now}. Los parámetros marcados como "
-                "«pendiente verificacion» no se han contrastado con el texto oficial del Anejo 19.", S["small"]))
+    E.append(_p(f"Documento generado por {SOFTWARE_NAME} v{__version__} el {now}. Estado de cada parámetro: "
+                "«verificado texto oficial» = cotejado con el Anejo 19 publicado en el BOE; «pendiente "
+                "verificacion» = depende de disposiciones no consultadas; «no normativo» = criterio del programa.",
+                S["small"]))
     doc.build(E, onFirstPage=on_page, onLaterPages=on_page)
     return buf.getvalue()

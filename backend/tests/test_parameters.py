@@ -32,10 +32,19 @@ def test_override_marks_user_status():
 
 
 @pytest.mark.parametrize("key,val", [("alpha_cc", 1.2), ("gamma_c_persistente", 0.9),
-                                     ("As_max_coef", -0.1), ("alpha_cc", "abc")])
+                                     ("As_max_coef", -0.1), ("alpha_cc", "abc"),
+                                     ("alpha_ct", 0.9), ("delta_redistribucion", 0.6)])
 def test_invalid_overrides(key, val):
     with pytest.raises(ParameterError):
         ParameterSet({key: val})
+
+
+def test_verified_statuses():
+    p = ParameterSet()
+    for key in ("gamma_c_persistente", "alpha_cc", "Es", "z_factor_asmin", "As_max_coef", "spacing_k1"):
+        assert p.get(key).status == VerificationStatus.VERIFICADO_TEXTO_OFICIAL
+        assert "BOE pág." in p.get(key).reference
+    assert p.get("bar_diameters").status == VerificationStatus.NO_NORMATIVO
 
 
 def test_unknown_parameter():
