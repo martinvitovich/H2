@@ -61,6 +61,11 @@ Abra <http://localhost:5173>. La API queda en <http://127.0.0.1:8000> (documenta
 
 Modo «producción» local (un único proceso): `npm run start` → <http://127.0.0.1:8000>.
 
+## Publicar en Internet
+
+La opción más sencilla es un único servicio en Render con el `Dockerfile` incluido: véase
+[docs/despliegue.md](docs/despliegue.md).
+
 ## Pruebas
 
 ```bash

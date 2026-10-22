@@ -1,0 +1,9 @@
+# Despliegue en Render (https://render.com) como «Blueprint»: un único servicio web con Docker.
+services:
+  - type: web
+    name: ha-anejo19
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true

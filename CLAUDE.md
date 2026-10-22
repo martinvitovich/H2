@@ -58,6 +58,7 @@ npm test           # pytest
 npm run typecheck  # TypeScript
 npm run build      # compila frontend
 npm run start      # compila y sirve todo desde FastAPI (:8000)
+docker build -t ha-anejo19 . && docker run -p 8000:8000 ha-anejo19   # imagen de despliegue (Render: render.yaml)
 ```
 
 ## Estado real de los módulos (v0.6.0)
