@@ -281,7 +281,7 @@ function BeamFlexure() {
           {!activeProject && (
             <p className="text-[11px] text-slate-500">
               Para guardar el elemento, abra o cree un proyecto en{" "}
-              <Link to="/proyectos" className="text-brand underline">
+              <Link to="/proyectos/calculos" className="text-brand underline">
                 Proyectos
               </Link>
               .

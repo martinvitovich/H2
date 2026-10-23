@@ -401,4 +401,6 @@ export interface ProjectSummary {
   modified: string;
   created: string;
   n_elements: number;
+  status?: string;
+  counts?: Record<string, number>;
 }

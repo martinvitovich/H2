@@ -19,9 +19,23 @@ frontend/ (React + TS + Vite + Tailwind)  ──HTTP /api──▶  backend/main
                                                            │   ├─ els/elastic.py   secciones homogeneizada y fisurada
                                                            │   ├─ els/fluencia.py  fluencia y retracción (3.1.4, Ap. B)
                                                            │   ├─ els/fisuracion.py, els/flechas.py
-                                                           │   └─ els/           (pendiente)
-                                                           └─ services/   informes PDF y proyectos
+                                                                                                                      ├─ estructura/ proyecto integral (sin fórmulas del Anejo 19)
+                                                           │   ├─ db.py          SQLite + migraciones
+                                                           │   ├─ model.py       esquema de datos y validación
+                                                           │   ├─ repository.py  proyectos, niveles, elementos, relaciones, resultados, historial
+                                                           │   ├─ estatica.py    equilibrio de vigas isostáticas
+                                                           │   ├─ analisis.py    transmisión de cargas, entradas del motor, estados
+                                                           │   ├─ calculos.py    llamada al motor y resúmenes
+                                                           │   ├─ servicio.py    vistas, cálculo selectivo, adopción de propuestas
+                                                           │   └─ informes.py    tablas resumen, Excel y PDF del proyecto/elemento
+                                                           └─ services/   informes PDF por cálculo y almacén de proyectos (ProjectStore)
 ```
+
+Capas del proyecto integral: interfaz (`frontend/src/pages/ProjectsPanel.tsx`, `Workspace.tsx`,
+`frontend/src/estructura/*`) → API (`api/estructura_routes.py`) → servicio/relaciones/dependencias
+(`estructura/servicio.py`, `analisis.py`) → persistencia (`repository.py`, `db.py`) → motor (`core`,
+sin cambios) → resultados (tabla `results`) → informes (`informes.py`). Detalle en
+`docs/proyecto_integral.md`.
 
 - El **motor** (`core`) no importa nada de FastAPI ni de servicios: puede usarse desde
   scripts (`examples/run_example.py`) o tests.
@@ -50,6 +64,15 @@ frontend/ (React + TS + Vite + Tailwind)  ──HTTP /api──▶  backend/main
 | GET | /api/els/catalogo | clases de exposición (w_max) y sistemas (K) |
 | POST | /api/els/fisuracion, /api/els/deformaciones | ELS |
 | POST | /api/informes/els/fisuracion, /api/informes/els/deformaciones | informes PDF de ELS |
-| GET/POST/PUT/DELETE | /api/proyectos[/{id}], /api/proyectos/importar | proyectos |
+| GET/POST/PUT/DELETE | /api/proyectos[/{id}], /api/proyectos/importar | proyectos (cálculos independientes, compatibilidad formato 1) |
+| GET | /api/estructuras/esquema | campos, unidades y rangos del modelo |
+| GET/POST | /api/estructuras, /api/estructuras/importar | lista y alta de proyectos integrales |
+| GET/PATCH/DELETE | /api/estructuras/{id} | resumen con estados / datos y configuración / borrado |
+| POST | /api/estructuras/{id}/archivar, /duplicar; GET /exportar, /historial | gestión |
+| POST/PATCH/DELETE | /api/estructuras/{id}/niveles[/{lid}] | niveles |
+| POST/GET/PATCH/DELETE | /api/estructuras/{id}/elementos[/lote, /{eid}, /{eid}/duplicar, /{eid}/adoptar-propuesta] | elementos |
+| POST/PATCH/DELETE | /api/estructuras/{id}/relaciones[/{lid}] | relaciones |
+| POST | /api/estructuras/{id}/calcular | cálculo selectivo (pendientes o forzado) |
+| GET | /api/estructuras/{id}/planillas, /planilla.xlsx, /informe.pdf, /elementos/{eid}/ficha.pdf, /elementos/{eid}/informe.pdf?calc= | planillas e informes |
 
 Documentación interactiva: http://127.0.0.1:8000/docs

@@ -15,6 +15,7 @@ const LINKS: Record<string, string> = {
   els_fisuracion: "/els",
   els_deformaciones: "/els?calc=deformaciones",
   proyectos: "/proyectos",
+  proyecto_integral: "/proyectos",
   informes: "/informes",
 };
 
@@ -29,11 +30,11 @@ export default function Home({ info }: { info: AppInfo | null }) {
         title="Cálculo de estructuras de hormigón armado"
         subtitle="Dimensionado y verificación según el Anejo 19 del Código Estructural (RD 470/2021). Los cálculos se ejecutan en el motor Python del servidor y cada resultado incluye su procedimiento, referencias y advertencias."
       >
-        <Link to="/vigas" className="btn-primary">
-          Nueva viga a flexión
+        <Link to="/proyectos" className="btn-primary">
+          Proyectos estructurales
         </Link>
-        <Link to="/proyectos" className="btn-secondary">
-          Proyectos
+        <Link to="/vigas" className="btn-secondary">
+          Calculadora de vigas
         </Link>
       </PageHeader>
 
@@ -74,10 +75,11 @@ export default function Home({ info }: { info: AppInfo | null }) {
             <ul className="space-y-2">
               {projects.slice(0, 6).map((p) => (
                 <li key={p.id}>
-                  <Link to={`/proyectos?id=${p.id}`} className="block rounded-md border border-slate-100 p-2 hover:bg-slate-50">
+                  <Link to={`/p/${p.id}/resumen`} className="block rounded-md border border-slate-100 p-2 hover:bg-slate-50">
                     <div className="text-sm font-medium">{p.name}</div>
                     <div className="text-[11px] text-slate-500">
-                      {p.n_elements} elemento(s) · {new Date(p.modified).toLocaleString("es-ES")}
+                      {p.counts ? `${Object.values(p.counts).reduce((a, b) => a + b, 0)} elemento(s) estructurales · ` : ""}
+                      {new Date(p.modified).toLocaleString("es-ES")}
                     </div>
                   </Link>
                 </li>

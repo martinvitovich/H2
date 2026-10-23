@@ -88,7 +88,7 @@ def test_projects_crud(client):
     r = client.post("/api/proyectos", json={"name": "Edificio A", "elements": [el]})
     assert r.status_code == 201
     pid = r.json()["id"]
-    assert r.json()["format_version"] == 1
+    assert r.json()["format_version"] == 2
     assert client.get("/api/proyectos").json()[0]["id"] == pid
     r = client.put(f"/api/proyectos/{pid}", json={"name": "Edificio B", "elements": []})
     assert r.json()["name"] == "Edificio B"

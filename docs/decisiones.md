@@ -133,3 +133,26 @@ exacto. Las separaciones se comprueban aparte con las reglas de 9.3.1.1(3) y 8.2
 ## D25 — Despliegue de un solo proceso
 `npm run start` compila el frontend y FastAPI lo sirve con un «fallback» a index.html para las rutas
 de la aplicación (recarga directa de /pilares, /els…); las rutas /api inexistentes devuelven 404.
+
+## D26 — Base de datos SQLite para proyectos
+Proyectos, elementos, relaciones, resultados e historial en SQLite (biblioteca estándar, claves foráneas,
+WAL, migraciones versionadas). Sin servidor adicional y desplegable en el mismo contenedor. Los proyectos
+JSON anteriores se importan una vez sin borrar los ficheros.
+
+## D27 — Estado de resultados por huella de la entrada
+No se marcan resultados «a mano»: el estado se obtiene comparando la huella SHA-256 de la entrada del motor
+derivada de los datos actuales (más la versión del software) con la guardada. Así cualquier cambio aguas
+arriba (losa, relación, configuración, nivel) desactualiza exactamente los cálculos cuya entrada cambia.
+
+## D28 — Transmisión de cargas solo por equilibrio isostático o datos del usuario
+El motor no dispone de análisis de continuidad ni de placas. La transmisión usa áreas/anchos tributarios
+definidos por el usuario y equilibrio de vigas biapoyadas o en voladizo; para otros casos el usuario introduce
+esfuerzos y reacciones de un análisis externo (modelo «manual»). Así se documenta en cada resultado.
+
+## D29 — Sin recálculo automático
+Los cambios se guardan al instante pero los cálculos solo se ejecutan a petición («Calcular pendientes»), para
+no sobrescribir resultados sin que el usuario sepa a qué datos corresponden.
+
+## D30 — Comprobación del terreno fuera del Anejo 19
+La presión media bajo zapata (carga centrada, presión uniforme, combinación característica frente a σ_adm del
+estudio geotécnico) se incluye como comprobación simplificada identificada como no perteneciente al Anejo 19.

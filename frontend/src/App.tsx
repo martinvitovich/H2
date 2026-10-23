@@ -10,6 +10,8 @@ const Materials = lazy(() => import("./pages/Materials"));
 const Sections = lazy(() => import("./pages/Sections"));
 const Beams = lazy(() => import("./pages/Beams"));
 const Projects = lazy(() => import("./pages/Projects"));
+const ProjectsPanel = lazy(() => import("./pages/ProjectsPanel"));
+const Workspace = lazy(() => import("./pages/Workspace"));
 const Reports = lazy(() => import("./pages/Reports"));
 const NormConfig = lazy(() => import("./pages/NormConfig"));
 const Columns = lazy(() => import("./pages/Columns"));
@@ -19,6 +21,7 @@ const ELU = lazy(() => import("./pages/Placeholders").then((m) => ({ default: m.
 
 const NAV = [
   { to: "/", label: "Inicio" },
+  { to: "/proyectos", label: "Proyectos" },
   { to: "/materiales", label: "Materiales" },
   { to: "/secciones", label: "Secciones" },
   { to: "/vigas", label: "Vigas" },
@@ -26,7 +29,7 @@ const NAV = [
   { to: "/pilares", label: "Pilares" },
   { to: "/elu", label: "Estados Límite Últimos (ELU)" },
   { to: "/els", label: "Estados Límite de Servicio (ELS)" },
-  { to: "/proyectos", label: "Proyectos" },
+  { to: "/proyectos/calculos", label: "Cálculos independientes" },
   { to: "/informes", label: "Informes de cálculo" },
   { to: "/normativa", label: "Configuración normativa" },
 ];
@@ -124,7 +127,11 @@ export default function App() {
             <Route path="/pilares" element={<Columns />} />
             <Route path="/elu" element={<ELU modules={info?.modules ?? []} />} />
             <Route path="/els" element={<ELS />} />
-            <Route path="/proyectos" element={<Projects />} />
+            <Route path="/proyectos" element={<ProjectsPanel />} />
+            <Route path="/proyectos/calculos" element={<Projects />} />
+            <Route path="/p/:pid" element={<Workspace />} />
+            <Route path="/p/:pid/e/:eid" element={<Workspace />} />
+            <Route path="/p/:pid/:tab" element={<Workspace />} />
             <Route path="/informes" element={<Reports />} />
             <Route path="/normativa" element={<NormConfig />} />
             <Route path="*" element={<div className="card">Página no encontrada.</div>} />

@@ -13,7 +13,10 @@ apoyo profesional; los resultados deben revisarse por un ingeniero responsable.
 - `backend/main.py`: FastAPI. `backend/api/`: rutas y modelos Pydantic.
 - `backend/core/`: motor de cálculo puro (sin dependencias web). `parameters.py`,
   `units.py`, `materials.py`, `section.py`, `trace.py`, `status.py`, `elu/`, `els/`.
-- `backend/services/`: `report_pdf.py` (ReportLab), `projects.py` (JSON versionado).
+- `backend/estructura/`: proyecto integral (SQLite, modelo, relaciones, transmisión de cargas,
+  estados de resultados, cálculo selectivo, Excel/PDF). No contiene fórmulas del Anejo 19: delega en `core`.
+- `backend/services/`: `report_pdf.py` (ReportLab), `projects.py` (ProjectStore sobre SQLite; importa
+  una vez los JSON antiguos sin borrarlos).
 - `backend/tests/`: Pytest. `docs/`: documentación técnica. `examples/`: ejemplos.
 Detalle en `docs/arquitectura.md`.
 
@@ -61,7 +64,7 @@ npm run start      # compila y sirve todo desde FastAPI (:8000)
 docker build -t ha-anejo19 . && docker run -p 8000:8000 ha-anejo19   # imagen de despliegue (Render: render.yaml)
 ```
 
-## Estado real de los módulos (v0.6.0)
+## Estado real de los módulos (v0.7.0)
 | Módulo | Estado |
 |---|---|
 | Parámetros normativos | Cotejados con el texto oficial (BOE); pendiente solo la ductilidad de aceros (Arts. 34-35 CE) |
@@ -69,14 +72,24 @@ docker build -t ha-anejo19 . && docker run -p 8000:8000 ha-anejo19   # imagen de
 | Secciones rectangular/T, varias capas, 8.2(2)-(3) | Implementado y cotejado · falta contraste bibliográfico |
 | Vigas — flexión ELU (dimensionado rectangular, comprobación rect./T; 9.2.1.1, 9.2.1.2(3)) | Implementado y cotejado · falta contraste bibliográfico |
 | Vigas — cortante ELU (V_Rd,c, cercos 45°–90°, bielas, 9.2.2) | Implementado y cotejado · falta contraste bibliográfico |
-| Proyectos (JSON v1, elementos viga_flexion y viga_cortante) e informes PDF | Implementado |
+| Proyecto integral (niveles, losas, vigas, pilares, zapatas, relaciones, cargas con procedencia, resultados desactualizados, cálculo selectivo, historial) | Implementado · ver `docs/proyecto_integral.md` |
+| Proyectos (SQLite, formato JSON 2, migración de JSON 1), informes PDF, memoria y planilla Excel | Implementado |
 | Pilares — flexocompresión recta (N–M 6.1, 5.2, 5.8.3, curvatura nominal 5.8.8, 9.5) | Implementado y cotejado · falta contraste bibliográfico |
 | ELS — fisuración y tensiones (7.2, 7.3) | Implementado y cotejado · falta contraste bibliográfico |
 | ELS — deformaciones (7.4, 3.1.4, Apéndice B) | Implementado y cotejado · falta contraste bibliográfico |
 | Losas macizas unidireccionales (9.3, flexión por metro, reparto, cortante sin armadura) | Implementado y cotejado · falta contraste bibliográfico |
 | Losas bidireccionales y planas, punzonamiento (6.4, 9.4) | No disponible |
 
+## Reglas del proyecto integral
+- Las relaciones usan ids internos; los códigos son únicos por proyecto pero editables.
+- No recalcular automáticamente ni mostrar resultados desactualizados como vigentes (estado por huella SHA-256).
+- Transmisión solo por reglas documentadas (áreas tributarias, equilibrio isostático) o datos manuales;
+  si faltan datos, pedirlos (`faltan_datos`), nunca suponerlos. No cambiar el motor desde `estructura/`.
+- La planilla `Cálculos.xlsx` solo se usó como referencia de organización, no de fórmulas ni validación.
+
 ## Pendiente
+- Proyecto integral: continuidad de vigas/losas, alternancia de sobrecargas, momentos en pilares,
+  dimensionado estructural de zapatas, áreas tributarias automáticas.
 - Contraste con ejemplos resueltos de bibliografía verificable (para pasar a «verificado»).
 - Consultar los Arts. 34-35 del Código Estructural (ductilidad de aceros) y 43.4.1 (recubrimientos).
 - Cortante: reducción β por cargas próximas a apoyos, rasante ala-alma (6.2.4), torsión (6.3),
@@ -91,4 +104,4 @@ docker build -t ha-anejo19 . && docker run -p 8000:8000 ha-anejo19   # imagen de
 - Recubrimientos por durabilidad (4.4.1) y anchura eficaz (5.3.2.1).
 
 ## Decisiones
-Ver `docs/decisiones.md` (D1–D25).
+Ver `docs/decisiones.md` (D1–D30).

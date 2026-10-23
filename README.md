@@ -11,7 +11,15 @@ advertencias. Genera informes PDF y guarda proyectos.
 > en un proyecto real. Los parámetros se han cotejado con el texto oficial del Anejo 19 (BOE);
 > lo que sigue pendiente se detalla en [docs/normativa.md](docs/normativa.md).
 
-## Funcionalidades (v0.6.0)
+## Funcionalidades (v0.7.0)
+
+- **Proyecto estructural integral** (`/proyectos`): proyectos con datos generales, materiales y
+  configuración; plantas y niveles; losas, vigas, pilares y zapatas en tablas editables con
+  autoguardado y fichas individuales; relaciones explícitas (losa → viga, viga → pilar/viga,
+  pilar → pilar, pilar → zapata) con transmisión de cargas trazable (áreas tributarias y equilibrio
+  isostático, o esfuerzos manuales); detección de resultados desactualizados y cálculo selectivo con el
+  motor; historial de cambios; memoria PDF, planilla Excel, ficha PDF por elemento. Base de datos SQLite
+  persistente. Ver [docs/proyecto_integral.md](docs/proyecto_integral.md) (alcance y limitaciones).
 
 - **Vigas — flexión simple ELU**: dimensionado de secciones rectangulares (con armadura
   de compresión si procede), propuesta de barras con alternativas, comprobación de
@@ -32,7 +40,7 @@ advertencias. Genera informes PDF y guarda proyectos.
   separaciones (9.3.1), armadura de reparto, cortante sin armadura de cortante.
 - Materiales (tabla A19.3.1, diagramas de cálculo), secciones con dibujo a escala.
 - «Normativa y procedimiento» en cada cálculo; configuración normativa editable.
-- Informes PDF; proyectos guardados en JSON versionado (importar/exportar).
+- Informes PDF; cálculos independientes de las calculadoras guardados en el proyecto; exportación/importación JSON.
 - Pendiente: losas bidireccionales y planas, punzonamiento, flexión esviada.
 
 ## Requisitos
@@ -99,7 +107,7 @@ scripts/             scripts de arranque multiplataforma
 | `Port 5173 is in use` / `address already in use :8000` | Cierre la otra instancia o use `HA_BACKEND_PORT=8001 npm run dev`. |
 | Error de certificados al instalar | Configure el proxy/certificados corporativos de pip y npm. |
 
-Variables de entorno: `HA_BACKEND_PORT`, `HA_DATA_DIR` (carpeta de proyectos),
+Variables de entorno: `HA_BACKEND_PORT`, `HA_DATA_DIR` (carpeta de datos: base de datos `ha_anejo19.sqlite3` y proyectos JSON antiguos, que se importan una vez),
 `HA_CORS_ORIGINS`.
 
 ## Documentación

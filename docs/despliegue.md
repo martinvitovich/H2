@@ -30,7 +30,7 @@ Cada `git push` a esa rama vuelve a desplegar la aplicación automáticamente (`
 - **Los proyectos guardados no son permanentes:** el disco del plan gratuito se borra en cada reinicio o
   despliegue. Use «Exportar JSON» en *Proyectos* para conservarlos. Para guardarlos de forma fiable:
   plan de pago con **disco persistente** montado en `/data` (la aplicación guarda en `/data/projects`,
-  variable `HA_DATA_DIR`), o migrar a una base de datos.
+  variable `HA_DATA_DIR`; la base de datos SQLite es `/data/projects/ha_anejo19.sqlite3`).
 - **Sin autenticación:** cualquiera con el enlace puede usar la aplicación y ver, modificar o borrar los
   proyectos guardados. No publique datos confidenciales.
 

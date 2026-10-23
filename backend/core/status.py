@@ -24,8 +24,10 @@ MODULES = [
      "detail": "w_k (7.3.4), w_max (tabla 27.2), armadura mínima (7.3.2), tensiones (7.2). Flexión simple. Cotejado con el texto oficial; pendiente contraste bibliográfico."},
     {"id": "els_deformaciones", "name": "ELS — deformaciones", "status": "pendiente_validacion",
      "detail": "Relación luz/canto (7.4.2) y cálculo de flechas (7.4.3) con fluencia y retracción (3.1.4, Apéndice B). Cotejado con el texto oficial; pendiente contraste bibliográfico."},
+    {"id": "proyecto_integral", "name": "Proyecto estructural integral", "status": "pendiente_validacion",
+     "detail": "Niveles, losas, vigas, pilares y zapatas relacionados en una base de datos; transmisión de cargas con procedencia (áreas tributarias y equilibrio de vigas isostáticas); control de resultados desactualizados; cálculo selectivo con el motor. Sin análisis de continuidad, placas ni dimensionado estructural de zapatas."},
     {"id": "proyectos", "name": "Proyectos", "status": "pendiente_validacion",
-     "detail": "Guardado/apertura en JSON versionado (formato 1)."},
-    {"id": "informes", "name": "Informes PDF", "status": "pendiente_validacion",
-     "detail": "Informe de flexión de vigas."},
+     "detail": "Base de datos SQLite con migraciones; importación de los proyectos JSON anteriores; exportación/importación JSON (formato 2)."},
+    {"id": "informes", "name": "Informes y planillas", "status": "pendiente_validacion",
+     "detail": "Informes PDF de cada cálculo, ficha PDF por elemento, memoria resumen PDF del proyecto y planilla Excel de datos y resultados."},
 ]

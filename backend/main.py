@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from api.estructura_routes import router as estructura_router
 from api.routes import router
 from core.elu.analysis import AnalysisError
 from core.elu.cortante import ShearInputError
@@ -26,7 +27,9 @@ from core.elu.flexion import FlexureInputError
 from core.materials import MaterialError
 from core.parameters import ParameterError
 from core.section import SectionError
-from services.projects import ProjectError, ProjectNotFound
+from estructura.model import ModelError
+from estructura.repository import NotFound
+from services.projects import ProjectError
 from version import SOFTWARE_NAME, __version__
 
 app = FastAPI(title=f"{SOFTWARE_NAME} API", version=__version__,
@@ -37,8 +40,8 @@ origins = os.environ.get("HA_CORS_ORIGINS", "http://localhost:5173,http://127.0.
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"])
 
 
-@app.exception_handler(ProjectNotFound)
-async def _not_found(_: Request, exc: ProjectNotFound):
+@app.exception_handler(NotFound)
+async def _not_found(_: Request, exc: NotFound):
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
@@ -47,13 +50,14 @@ async def _value_error(_: Request, exc: ValueError):
     # Errores de validación del dominio (geometría, materiales, parámetros, proyectos...)
     kinds = (SectionError, MaterialError, ParameterError, FlexureInputError, AnalysisError, ProjectError,
              ShearInputError, ColumnInputError, NMError, CrackInputError, DeflectionInputError, CreepError,
-             SlabInputError)
+             SlabInputError, ModelError)
     if isinstance(exc, kinds):
         return JSONResponse(status_code=422, content={"detail": str(exc), "type": type(exc).__name__})
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 app.include_router(router)
+app.include_router(estructura_router)
 
 class SPAStaticFiles(StaticFiles):
     """Sirve la compilación del frontend y devuelve index.html para las rutas de la aplicación
